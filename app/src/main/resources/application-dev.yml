@@ -1,0 +1,12 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/greene_db
+    username: greene_user
+    password: greene_pass
+
+  flyway:
+    enabled: false   # disable until you have DB running
+
+  autoconfigure:
+    exclude:
+      - org.springframework.boot

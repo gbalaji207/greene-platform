@@ -1,0 +1,75 @@
+[versions]
+# Kotlin ecosystem (keep IntelliJ defaults — these are already latest)
+kotlin = "2.1.21"
+kotlinxDatetime = "0.7.1"
+kotlinxSerializationJSON = "1.9.0"
+kotlinxCoroutines = "1.10.2"
+
+# Spring
+springBoot = "3.5.9"
+springDependencyManagement = "1.1.7"
+
+# Auth
+jjwt = "0.13.0"
+
+# Database
+postgresql = "42.7.6"
+flyway = "11.8.2"
+
+# Testing
+mockk = "1.14.7"
+testcontainers = "1.21.0"
+
+[libraries]
+# Kotlin ecosystem (from IntelliJ defaults — kept as-is)
+kotlinGradlePlugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
+kotlinxDatetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinxDatetime" }
+kotlinxSerialization = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerializationJSON" }
+kotlinxCoroutines = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinxCoroutines" }
+kotlin-plugin-spring = { module = "org.jetbrains.kotlin:kotlin-allopen", version.ref = "kotlin" }
+kotlin-plugin-jpa = { module = "org.jetbrains.kotlin:kotlin-noarg", version.ref = "kotlin" }
+
+# Spring Boot starters (no version needed — managed by Spring BOM via plugin)
+spring-boot-starter-web = { module = "org.springframework.boot:spring-boot-starter-web" }
+spring-boot-starter-security = { module = "org.springframework.boot:spring-boot-starter-security" }
+spring-boot-starter-data-jpa = { module = "org.springframework.boot:spring-boot-starter-data-jpa" }
+spring-boot-starter-validation = { module = "org.springframework.boot:spring-boot-starter-validation" }
+spring-boot-starter-data-redis = { module = "org.springframework.boot:spring-boot-starter-data-redis" }
+spring-boot-starter-test = { module = "org.springframework.boot:spring-boot-starter-test" }
+spring-boot-gradle-plugin = { module = "org.springframework.boot:spring-boot-gradle-plugin", version.ref = "springBoot" }
+spring-dependency-management-plugin = { module = "io.spring.gradle:dependency-management-plugin", version.ref = "springDependencyManagement" }
+
+# Auth
+jjwt-api = { module = "io.jsonwebtoken:jjwt-api", version.ref = "jjwt" }
+jjwt-impl = { module = "io.jsonwebtoken:jjwt-impl", version.ref = "jjwt" }
+jjwt-jackson = { module = "io.jsonwebtoken:jjwt-jackson", version.ref = "jjwt" }
+
+# Database
+postgresql-driver = { module = "org.postgresql:postgresql", version.ref = "postgresql" }
+flyway-core = { module = "org.flywaydb:flyway-core", version.ref = "flyway" }
+flyway-postgresql = { module = "org.flywaydb:flyway-database-postgresql", version.ref = "flyway" }
+
+# Testing
+mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
+testcontainers-postgresql = { module = "org.testcontainers:postgresql", version.ref = "testcontainers" }
+testcontainers-junit = { module = "org.testcontainers:junit-jupiter", version.ref = "testcontainers" }
+
+[bundles]
+# From IntelliJ defaults — kept as-is
+kotlinxEcosystem = ["kotlinxDatetime", "kotlinxSerialization", "kotlinxCoroutines"]
+
+# Convenience bundle for JWT in :core
+jjwt = ["jjwt-api", "jjwt-impl", "jjwt-jackson"]
+
+# Convenience bundle for integration testing
+integrationTesting = ["testcontainers-postgresql", "testcontainers-junit"]
+
+[plugins]
+# From IntelliJ defaults
+kotlinPluginSerialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+
+# Added for Spring Boot
+spring-boot = { id = "org.springframework.boot", version.ref = "springBoot" }
+spring-dependency-management = { id = "io.spring.dependency-management", version.ref = "springDependencyManagement" }
+kotlin-spring = { id = "org.jetbrains.kotlin.plugin.spring", version.ref = "kotlin" }
+kotlin-jpa = { id = "org.jetbrains.kotlin.plugin.jpa", version.ref = "kotlin" }
