@@ -43,3 +43,14 @@ bin/
 
 ### Mac OS ###
 .DS_Store
+
+### Secrets — never commit credentials ###
+.env
+.env.*
+!.env.example
+application-*.local.yml
+secrets/
+*.secret
+*.pem
+*.p12
+*.jks

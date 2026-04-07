@@ -27,3 +27,9 @@ dependencies {
 springBoot {
     mainClass = "com.greene.app.GreeneApplicationKt"
 }
+
+// Set the working directory to the project root so that `spring.config.import`
+// can locate `.env` at `file:.env` regardless of which submodule Gradle runs from.
+tasks.named<org.springframework.boot.gradle.tasks.run.BootRun>("bootRun") {
+    workingDir = rootProject.projectDir
+}

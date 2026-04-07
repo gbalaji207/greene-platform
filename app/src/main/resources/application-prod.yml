@@ -1,10 +1,29 @@
+spring:
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+
+  flyway:
+    enabled: true
+
+  jpa:
+    show-sql: false
+    hibernate:
+      ddl-auto: validate
+
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT:6379}
+
+logging:
+  level:
+    root: WARN
+    com.greene: INFO
+
 springdoc:
   swagger-ui:
-    enabled: true
-    path: /swagger-ui
-    try-it-out-enabled: false
-    operations-sorter: alpha
-    tags-sorter: alpha
+    enabled: false
   api-docs:
-    enabled: true
-    path: /api-docs
+    enabled: false
