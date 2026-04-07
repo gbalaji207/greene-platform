@@ -1,23 +1,37 @@
 spring:
+  config:
+    # Load .env from the project root as a native Spring property source.
+    # [.properties] tells Spring Boot to parse it as key=value format.
+    # optional: means startup succeeds even if the file is absent (e.g. in CI).
+    import: "optional:file:.env[.properties]"
+
   datasource:
-    url: jdbc:postgresql://localhost:5432/greene_db
-    username: greene_user
-    password: greene_pass
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/greene_db}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
 
   flyway:
-    enabled: false   # disable until you have DB running
+    enabled: true
 
-  autoconfigure:
-    exclude:
-      - org.springframework.boot
+  jpa:
+    show-sql: true
+    hibernate:
+      ddl-auto: validate
 
-  springdoc:
-    swagger-ui:
-      enabled: true
-      path: /swagger-ui
-      try-it-out-enabled: true
-      operations-sorter: alpha
-      tags-sorter: alpha
-    api-docs:
-      enabled: true
-      path: /api-docs
+logging:
+  level:
+    root: INFO
+    com.greene: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.orm.jdbc.bind: TRACE
+
+springdoc:
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui
+    try-it-out-enabled: true
+    operations-sorter: alpha
+    tags-sorter: alpha
+  api-docs:
+    enabled: true
+    path: /api-docs
