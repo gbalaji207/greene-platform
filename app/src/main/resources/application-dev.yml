@@ -10,3 +10,14 @@ spring:
   autoconfigure:
     exclude:
       - org.springframework.boot
+
+  springdoc:
+    swagger-ui:
+      enabled: true
+      path: /swagger-ui
+      try-it-out-enabled: true
+      operations-sorter: alpha
+      tags-sorter: alpha
+    api-docs:
+      enabled: true
+      path: /api-docs
