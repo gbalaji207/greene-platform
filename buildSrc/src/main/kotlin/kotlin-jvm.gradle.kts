@@ -15,6 +15,12 @@ kotlin {
     jvmToolchain(21)
 }
 
+dependencies {
+    // kotlin-reflect is required by Spring Data JPA (and Spring in general) to inspect
+    // Kotlin class constructors/properties at runtime (e.g. KClasses, PreferredConstructorDiscoverer).
+    implementation(kotlin("reflect"))
+}
+
 // Import Spring Boot BOM so all submodules get managed versions
 dependencyManagement {
     imports {

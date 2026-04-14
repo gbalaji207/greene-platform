@@ -29,3 +29,25 @@ spring:
 
 server:
   port: ${SERVER_PORT:8080}
+
+# ── OTP behaviour ─────────────────────────────────────────────────────────────
+otp:
+  expiry-minutes: 10              # How long a generated OTP is valid
+  resend-wait-minutes: 1          # Minimum gap between resend attempts
+  max-resend-attempts: 3          # Max resends per active OTP
+  rate-limit-max: 3               # Max new-OTP generations per window
+  rate-limit-window-minutes: 10   # Window length for new-OTP rate limit
+
+# ── JWT ───────────────────────────────────────────────────────────────────────
+jwt:
+  # RSA-2048 PKCS#8 private key (BEGIN PRIVATE KEY header).
+  # In production supply via JWT_PRIVATE_KEY env var (literal \n for line breaks).
+  private-key: ${JWT_PRIVATE_KEY}
+  access-token-expiry-minutes: 15  # access token TTL; refresh token is always 30 days
+
+# ── AWS SES ───────────────────────────────────────────────────────────────────
+aws:
+  ses:
+    region: ${AWS_SES_REGION:ap-south-1}
+    from-address: ${AWS_SES_FROM_ADDRESS}
+

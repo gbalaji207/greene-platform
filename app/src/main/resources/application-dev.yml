@@ -1,9 +1,20 @@
 spring:
+
   config:
     # Load .env from the project root as a native Spring property source.
     # [.properties] tells Spring Boot to parse it as key=value format.
     # optional: means startup succeeds even if the file is absent (e.g. in CI).
     import: "optional:file:.env[.properties]"
+
+  mail:
+    host: localhost
+    port: 1025
+    properties:
+      mail:
+        smtp:
+          auth: false
+          starttls:
+            enable: false
 
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/greene_db}
@@ -35,3 +46,9 @@ springdoc:
   api-docs:
     enabled: true
     path: /api-docs
+
+aws:
+  ses:
+    region: ap-south-1
+    from-address: noreply@greene.local
+

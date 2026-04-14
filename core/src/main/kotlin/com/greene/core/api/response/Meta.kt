@@ -4,4 +4,6 @@ import java.time.Instant
 
 data class Meta(
     val timestamp: Instant = Instant.now(),
+    val version: String = "1.0",
 )
+
