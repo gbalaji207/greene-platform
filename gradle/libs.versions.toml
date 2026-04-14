@@ -12,6 +12,7 @@ springdocOpenapi = "2.8.9"
 
 # Auth
 jjwt = "0.13.0"
+awsSdk = "2.29.52"
 
 # Database
 postgresql = "42.7.6"
@@ -46,6 +47,7 @@ spring-security-test = { module = "org.springframework.security:spring-security-
 jjwt-api = { module = "io.jsonwebtoken:jjwt-api", version.ref = "jjwt" }
 jjwt-impl = { module = "io.jsonwebtoken:jjwt-impl", version.ref = "jjwt" }
 jjwt-jackson = { module = "io.jsonwebtoken:jjwt-jackson", version.ref = "jjwt" }
+aws-ses = { module = "software.amazon.awssdk:ses", version.ref = "awsSdk" }
 
 # Database
 postgresql-driver = { module = "org.postgresql:postgresql", version.ref = "postgresql" }

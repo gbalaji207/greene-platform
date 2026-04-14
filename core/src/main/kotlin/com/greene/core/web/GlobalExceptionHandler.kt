@@ -5,6 +5,7 @@ import com.greene.core.api.error.ApiError
 import com.greene.core.api.error.ErrorDetail
 import com.greene.core.exception.PlatformException
 import org.slf4j.LoggerFactory
+import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.http.converter.HttpMessageConversionException
@@ -31,6 +32,26 @@ class GlobalExceptionHandler {
     }
 
     /**
+     * DB unique-constraint violations — safety net for cases where AuthService did not
+     * perform an explicit pre-flight check (should be rare but must never surface a 500).
+     *
+     * Constraint name matching is case-insensitive against the root-cause message.
+     */
+    @ExceptionHandler(DataIntegrityViolationException::class)
+    fun handleDataIntegrityViolation(ex: DataIntegrityViolationException): ResponseEntity<ApiError> {
+        val msg = ex.rootCause?.message?.lowercase() ?: ""
+        log.debug("Data integrity violation: {}", msg)
+        return when {
+            "uq_users_phone" in msg -> ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(ApiError.of("PHONE_ALREADY_REGISTERED", "An account with this phone number already exists"))
+            "uq_users_email" in msg -> ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(ApiError.of("EMAIL_ALREADY_ACTIVE", "An account with this email is already registered"))
+            else -> ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(ApiError.of("CONFLICT", "A data conflict occurred"))
+        }
+    }
+
+    /**
      * Bean Validation failures (@Valid on request DTOs).
      * Returns 400 with field-level details.
      */
@@ -51,7 +72,7 @@ class GlobalExceptionHandler {
     fun handleUnreadableMessage(ex: HttpMessageNotReadableException): ResponseEntity<ApiError> {
         log.debug("Unreadable request body: {}", ex.message)
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-            .body(ApiError.of(code = "MALFORMED_REQUEST", message = "Request body is missing or malformed"))
+            .body(ApiError.of(code = "VALIDATION_ERROR", message = "Validation failed"))
     }
 
     @ExceptionHandler(HttpMessageConversionException::class)

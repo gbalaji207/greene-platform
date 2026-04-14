@@ -1,8 +1,8 @@
-# Microgreens Training & Farming Platform — User Stories v2.0
+# Microgreens Training & Farming Platform — User Stories v3.0
 
 **Backend:** Spring Boot (Kotlin) | **Frontend:** Flutter PWA  
-**Last Updated:** 2025  
-**Version:** 2.0 — Single company platform, revised after stakeholder clarification  
+**Last Updated:** April 2026  
+**Version:** 3.0 — Reordered epics: Infrastructure & DevOps deferred to pre-launch phase  
 **Status Legend:** `[ ]` To Do | `[-]` In Progress | `[x]` Done
 
 ---
@@ -20,6 +20,16 @@
 
 ---
 
+## Development Phases
+
+| Phase | EPICs | Focus |
+|---|---|---|
+| **Phase 1 — Local Dev & APIs** | EPIC 1, 3–10 | Foundation + all backend domain APIs |
+| **Phase 2 — Flutter App** | EPIC 11, 12, 13, 15 | Admin/staff panel, client UI, testing, PWA |
+| **Phase 3 — Pre-Launch / Deploy** | EPIC 2, 14, 16 | Infra provisioning, security hardening, launch |
+
+---
+
 ## EPIC 1 — Project Foundation & Architecture
 
 ### E1-US1: System Architecture Document
@@ -28,11 +38,11 @@
 **So that** all developers build consistently against a shared blueprint.
 
 **Acceptance Criteria:**
-- [ ] Architecture diagram covers Flutter PWA ↔ Spring Boot ↔ PostgreSQL ↔ Firebase
-- [ ] API contract standards defined (REST conventions, error format, pagination)
-- [ ] Data flow documented for key scenarios (auth, batch booking, content unlock, journal, support ticket)
-- [ ] Role and permission matrix documented
-- [ ] Document reviewed and signed off before development begins
+- [x] Architecture diagram covers Flutter PWA ↔ Spring Boot ↔ PostgreSQL ↔ Firebase
+- [x] API contract standards defined (REST conventions, error format, pagination)
+- [x] Data flow documented for key scenarios (auth, batch booking, content unlock, journal, support ticket)
+- [x] Role and permission matrix documented
+- [x] Document reviewed and signed off before development begins
 
 ---
 
@@ -70,11 +80,11 @@
 **So that** Flutter and Spring Boot teams integrate without ambiguity.
 
 **Acceptance Criteria:**
-- [ ] Standard success response envelope: `{ data, meta }`
-- [ ] Standard error response: `{ code, message, details }`
-- [ ] Pagination format: `{ items, page, pageSize, total }`
-- [ ] OpenAPI/Swagger spec auto-generated from Spring Boot annotations
-- [ ] Swagger UI accessible in dev and staging environments
+- [x] Standard success response envelope: `{ data, meta }`
+- [x] Standard error response: `{ code, message, details }`
+- [x] Pagination format: `{ items, page, pageSize, total }`
+- [x] OpenAPI/Swagger spec auto-generated from Spring Boot annotations
+- [x] Swagger UI accessible in dev and staging environments
 
 ---
 
@@ -91,95 +101,9 @@
 
 ---
 
-## EPIC 2 — Infrastructure & DevOps
+## EPIC 2 — Authentication & User Management
 
-### E2-US1: VPS Provisioning
-**As a** DevOps engineer,  
-**I want** a production-ready VPS set up,  
-**So that** all services can be deployed reliably.
-
-**Acceptance Criteria:**
-- [ ] VPS provisioned (Hetzner CX21 or equivalent — minimum 2GB RAM)
-- [ ] SSH key-based access configured, password login disabled
-- [ ] Firewall rules: only ports 22, 80, 443 open
-- [ ] Swap space configured (2GB minimum)
-- [ ] Server timezone set to IST
-
----
-
-### E2-US2: Docker & Docker Compose Setup
-**As a** DevOps engineer,  
-**I want** all services containerized with Docker Compose,  
-**So that** the full stack can be started and stopped with a single command.
-
-**Acceptance Criteria:**
-- [ ] `docker-compose.yml` includes: Spring Boot app, PostgreSQL, Redis, Nginx
-- [ ] Named volumes configured for PostgreSQL data persistence
-- [ ] Health checks defined for each service
-- [ ] `.env.example` provided with all required variables
-- [ ] `docker-compose up` starts full stack locally without errors
-
----
-
-### E2-US3: CI/CD Pipeline
-**As a** developer,  
-**I want** automated build, test, and deploy pipelines via GitHub Actions,  
-**So that** every push is validated and deployable without manual steps.
-
-**Acceptance Criteria:**
-- [ ] PR pipeline: build + unit tests + lint for both backend and Flutter
-- [ ] Merge to `main`: auto-deploy to staging
-- [ ] Manual trigger: deploy to production with confirmation step
-- [ ] Notification on pipeline failure (email or Slack)
-- [ ] Pipeline runtime under 10 minutes for standard builds
-
----
-
-### E2-US4: PostgreSQL Setup & Backup
-**As a** DevOps engineer,  
-**I want** PostgreSQL configured with automated backups,  
-**So that** data is never permanently lost.
-
-**Acceptance Criteria:**
-- [ ] PostgreSQL running in Docker with persistent volume
-- [ ] Daily automated backup to object storage (Backblaze B2 or S3-compatible)
-- [ ] Backup retention: 30 days
-- [ ] Restore procedure documented and tested
-- [ ] Backup success/failure alerts configured
-
----
-
-### E2-US5: Nginx Reverse Proxy & SSL
-**As a** DevOps engineer,  
-**I want** Nginx configured as a reverse proxy with SSL termination,  
-**So that** all traffic is served securely over HTTPS.
-
-**Acceptance Criteria:**
-- [ ] Nginx proxies `/api/*` to Spring Boot and `/` to Flutter PWA static files
-- [ ] SSL certificate issued via Let's Encrypt (Certbot)
-- [ ] Auto-renewal configured for SSL certificate
-- [ ] HTTP redirects to HTTPS
-- [ ] Gzip compression enabled for static assets
-
----
-
-### E2-US6: Logging & Monitoring
-**As a** DevOps engineer,  
-**I want** centralized logging and uptime monitoring,  
-**So that** issues are detected and diagnosed quickly.
-
-**Acceptance Criteria:**
-- [ ] Spring Boot logs shipped to Grafana Loki or Papertrail
-- [ ] Uptime monitoring configured (UptimeRobot free tier minimum)
-- [ ] Alert triggered if service down for more than 2 minutes
-- [ ] Error rate dashboard available
-- [ ] Log retention policy: 90 days
-
----
-
-## EPIC 3 — Authentication & User Management
-
-### E3-US1: Client Self-Registration
+### E2-US1: Client Self-Registration
 **As a** prospective client,  
 **I want** to register on the platform myself,  
 **So that** I can browse batches and begin my enrollment journey.
@@ -193,7 +117,7 @@
 
 ---
 
-### E3-US2: Staff Account Creation by Admin
+### E2-US2: Staff Account Creation by Admin
 **As an** admin,  
 **I want** to create staff accounts from the admin panel,  
 **So that** staff can log in and manage clients without self-registering.
@@ -207,7 +131,7 @@
 
 ---
 
-### E3-US3: Login & JWT Auth
+### E2-US3: Login & JWT Auth
 **As a** registered user,  
 **I want** to log in securely and stay logged in,  
 **So that** I don't have to re-authenticate every session.
@@ -221,7 +145,7 @@
 
 ---
 
-### E3-US4: Role-Based Access Control
+### E2-US4: Role-Based Access Control
 **As a** system,  
 **I want** role-based access enforced on all API endpoints,  
 **So that** clients cannot access staff/admin features and vice versa.
@@ -235,7 +159,7 @@
 
 ---
 
-### E3-US5: Password Reset
+### E2-US5: Password Reset
 **As a** user,  
 **I want** to reset my password if I forget it,  
 **So that** I can regain access without contacting support.
@@ -249,7 +173,7 @@
 
 ---
 
-### E3-US6: Client Profile Management
+### E2-US6: Client Profile Management
 **As a** client,  
 **I want** to view and update my profile,  
 **So that** my information stays current.
@@ -263,9 +187,9 @@
 
 ---
 
-## EPIC 4 — Batch Management
+## EPIC 3 — Batch Management
 
-### E4-US1: Admin Creates a Batch
+### E3-US1: Admin Creates a Batch
 **As an** admin,  
 **I want** to create a new training batch,  
 **So that** clients can browse and book it.
@@ -279,7 +203,7 @@
 
 ---
 
-### E4-US2: Client Browses and Books a Batch
+### E3-US2: Client Browses and Books a Batch
 **As a** client,  
 **I want** to browse available batches and book a slot,  
 **So that** I can enroll in the training program that suits me.
@@ -293,7 +217,7 @@
 
 ---
 
-### E4-US3: Staff Confirms or Rejects Booking
+### E3-US3: Staff Confirms or Rejects Booking
 **As a** staff member,  
 **I want** to review and confirm or reject client booking requests,  
 **So that** only appropriate clients are enrolled in each batch.
@@ -307,7 +231,7 @@
 
 ---
 
-### E4-US4: Admin Closes a Batch
+### E3-US4: Admin Closes a Batch
 **As an** admin,  
 **I want** to manually close a batch when seats are filled,  
 **So that** no further bookings are accepted.
@@ -321,7 +245,7 @@
 
 ---
 
-### E4-US5: Staff Marks Training as Complete
+### E3-US5: Staff Marks Training as Complete
 **As a** staff member,  
 **I want** to mark a batch's offline training as complete,  
 **So that** all enrolled clients automatically get access to premium content.
@@ -335,7 +259,7 @@
 
 ---
 
-### E4-US6: Client Views Their Enrollment Status
+### E3-US6: Client Views Their Enrollment Status
 **As a** client,  
 **I want** to see the status of my batch booking and training,  
 **So that** I know where I am in the journey.
@@ -349,9 +273,9 @@
 
 ---
 
-## EPIC 5 — Content Management
+## EPIC 4 — Content Management
 
-### E5-US1: Crop Library
+### E4-US1: Crop Library
 **As a** client,  
 **I want** to browse a library of supported crop varieties,  
 **So that** I can understand what I will be growing.
@@ -365,7 +289,7 @@
 
 ---
 
-### E5-US2: Admin Manages Premium Content
+### E4-US2: Admin Manages Premium Content
 **As an** admin,  
 **I want** to upload and organize premium content for each crop,  
 **So that** clients get structured, high-quality guidance after training.
@@ -379,7 +303,7 @@
 
 ---
 
-### E5-US3: Staff Uploads Session Materials
+### E4-US3: Staff Uploads Session Materials
 **As a** staff member,  
 **I want** to upload materials for a batch after offline sessions,  
 **So that** clients can refer to session-specific resources in the app.
@@ -393,7 +317,7 @@
 
 ---
 
-### E5-US4: Client Accesses Premium Content
+### E4-US4: Client Accesses Premium Content
 **As a** client who has completed training,  
 **I want** to access premium growing content for my crop,  
 **So that** I can follow detailed instructions during my growing journey.
@@ -407,7 +331,7 @@
 
 ---
 
-### E5-US5: Client Selects Crop to Start Growing Journey
+### E4-US5: Client Selects Crop to Start Growing Journey
 **As a** client,  
 **I want** to select my crop when I begin my growing journey,  
 **So that** the platform generates the right checklist and plan for me from day 1.
@@ -421,9 +345,9 @@
 
 ---
 
-## EPIC 6 — Crop Checklist & Reminder System
+## EPIC 5 — Crop Checklist & Reminder System
 
-### E6-US1: Admin Creates Crop Checklist Templates
+### E5-US1: Admin Creates Crop Checklist Templates
 **As an** admin,  
 **I want** to define a day-by-day checklist template for each crop from day 1 to harvest,  
 **So that** clients get precise, crop-specific guidance throughout their growing journey.
@@ -437,7 +361,7 @@
 
 ---
 
-### E6-US2: Daily Task Generation per Client
+### E5-US2: Daily Task Generation per Client
 **As a** client,  
 **I want** my daily tasks auto-generated based on my crop and current day of journey,  
 **So that** I know exactly what to do without guessing.
@@ -451,7 +375,7 @@
 
 ---
 
-### E6-US3: Stage-Aware Smart Reminders
+### E5-US3: Stage-Aware Smart Reminders
 **As a** client,  
 **I want** reminders that are specific to my current growth stage,  
 **So that** I receive contextually relevant nudges and not generic alerts.
@@ -466,7 +390,7 @@
 
 ---
 
-### E6-US4: Checklist Completion Tracking
+### E5-US4: Checklist Completion Tracking
 **As a** client,  
 **I want** to mark tasks as complete and log required values,  
 **So that** my progress is tracked and visible to staff.
@@ -481,7 +405,7 @@
 
 ---
 
-### E6-US5: Streak Tracking
+### E5-US5: Streak Tracking
 **As a** client,  
 **I want** to see my checklist completion streak,  
 **So that** I stay motivated to tend to my trays consistently.
@@ -495,7 +419,7 @@
 
 ---
 
-### E6-US6: Growing Journey Completion
+### E5-US6: Growing Journey Completion
 **As a** client,  
 **I want** to be notified when my growing journey reaches harvest day,  
 **So that** I know my first cycle is complete and can log my harvest.
@@ -509,9 +433,9 @@
 
 ---
 
-## EPIC 7 — Tray & Batch Tracking
+## EPIC 6 — Tray & Batch Tracking
 
-### E7-US1: Client Creates a Tray
+### E6-US1: Client Creates a Tray
 **As a** client starting their growing journey,  
 **I want** to register my tray on the platform,  
 **So that** the system can track it and generate the right daily tasks.
@@ -525,7 +449,7 @@
 
 ---
 
-### E7-US2: Growth Stage Tracking
+### E6-US2: Growth Stage Tracking
 **As a** client,  
 **I want** to see my tray's current growth stage,  
 **So that** I know where I am in the cycle at a glance.
@@ -539,7 +463,7 @@
 
 ---
 
-### E7-US3: Harvest Logging
+### E6-US3: Harvest Logging
 **As a** client,  
 **I want** to log my harvest when I cut my microgreens,  
 **So that** I have a record of my yield and can share it with staff.
@@ -553,7 +477,7 @@
 
 ---
 
-### E7-US4: Tray History
+### E6-US4: Tray History
 **As a** client,  
 **I want** to view all my past trays and their outcomes,  
 **So that** I can learn from each cycle and improve.
@@ -566,9 +490,9 @@
 
 ---
 
-## EPIC 8 — Tray Journal
+## EPIC 7 — Tray Journal
 
-### E8-US1: Client Creates Journal Entry
+### E7-US1: Client Creates Journal Entry
 **As a** client,  
 **I want** to log daily observations about my tray as journal entries,  
 **So that** I have a growing diary and can share progress with staff for guidance.
@@ -582,7 +506,7 @@
 
 ---
 
-### E8-US2: Client Views Journal Feed
+### E7-US2: Client Views Journal Feed
 **As a** client,  
 **I want** to scroll through my tray's journal entries chronologically,  
 **So that** I can see how my tray has progressed day by day.
@@ -596,7 +520,7 @@
 
 ---
 
-### E8-US3: Staff Views Client Journal
+### E7-US3: Staff Views Client Journal
 **As a** staff member,  
 **I want** to view a client's tray journal,  
 **So that** I have full context of their growing progress before responding to queries.
@@ -610,7 +534,7 @@
 
 ---
 
-### E8-US4: Staff Comments on Journal Entry
+### E7-US4: Staff Comments on Journal Entry
 **As a** staff member,  
 **I want** to comment on a client's journal entry,  
 **So that** I can give specific feedback or encouragement on their observation.
@@ -624,9 +548,9 @@
 
 ---
 
-## EPIC 9 — Support Ticket System
+## EPIC 8 — Support Ticket System
 
-### E9-US1: Client Raises a Support Ticket
+### E8-US1: Client Raises a Support Ticket
 **As a** client,  
 **I want** to raise a support query linked to my tray,  
 **So that** staff can help me with a specific problem in context.
@@ -640,7 +564,7 @@
 
 ---
 
-### E9-US2: Staff Views Ticket with Tray Context
+### E8-US2: Staff Views Ticket with Tray Context
 **As a** staff member,  
 **I want** to see a client's tray journal and checklist history alongside their support ticket,  
 **So that** I can give an accurate and informed response without asking for repeated information.
@@ -654,7 +578,7 @@
 
 ---
 
-### E9-US3: Staff Responds to Ticket
+### E8-US3: Staff Responds to Ticket
 **As a** staff member,  
 **I want** to respond to a client's support ticket,  
 **So that** the client gets help and the conversation is tracked.
@@ -668,7 +592,7 @@
 
 ---
 
-### E9-US4: Client Replies to Ticket
+### E8-US4: Client Replies to Ticket
 **As a** client,  
 **I want** to reply to a staff response within the same ticket,  
 **So that** the conversation stays in one place and is easy to follow.
@@ -682,7 +606,7 @@
 
 ---
 
-### E9-US5: Staff Closes or Resolves Ticket
+### E8-US5: Staff Closes or Resolves Ticket
 **As a** staff member,  
 **I want** to mark a ticket as resolved or closed,  
 **So that** the support queue stays clean and manageable.
@@ -696,7 +620,7 @@
 
 ---
 
-### E9-US6: Staff Ticket Dashboard
+### E8-US6: Staff Ticket Dashboard
 **As a** staff member,  
 **I want** a dashboard view of all open tickets,  
 **So that** I can prioritize and manage client queries efficiently.
@@ -710,9 +634,9 @@
 
 ---
 
-## EPIC 10 — FAQ & Broadcast
+## EPIC 9 — FAQ & Broadcast
 
-### E10-US1: Admin Manages FAQ Library
+### E9-US1: Admin Manages FAQ Library
 **As an** admin,  
 **I want** to maintain a searchable FAQ library,  
 **So that** clients can resolve common questions without raising a support ticket.
@@ -726,7 +650,7 @@
 
 ---
 
-### E10-US2: Client Searches FAQ
+### E9-US2: Client Searches FAQ
 **As a** client,  
 **I want** to search the FAQ before raising a support ticket,  
 **So that** I can get instant answers to common problems.
@@ -740,7 +664,7 @@
 
 ---
 
-### E10-US3: Staff Sends Broadcast to Clients
+### E9-US3: Staff Sends Broadcast to Clients
 **As a** staff member,  
 **I want** to send a broadcast message to all clients or a specific batch,  
 **So that** I can share tips, reminders, or important updates efficiently.
@@ -754,9 +678,9 @@
 
 ---
 
-## EPIC 11 — Analytics & Reporting
+## EPIC 10 — Analytics & Reporting
 
-### E11-US1: Admin Dashboard — Platform Overview
+### E10-US1: Admin Dashboard — Platform Overview
 **As an** admin,  
 **I want** a dashboard showing key platform metrics,  
 **So that** I can monitor the health of the business at a glance.
@@ -770,7 +694,7 @@
 
 ---
 
-### E11-US2: Staff Dashboard — Client Overview
+### E10-US2: Staff Dashboard — Client Overview
 **As a** staff member,  
 **I want** to see an overview of all clients and their current status,  
 **So that** I can identify who needs attention today.
@@ -784,7 +708,7 @@
 
 ---
 
-### E11-US3: Client Dashboard — Personal Progress
+### E10-US3: Client Dashboard — Personal Progress
 **As a** client,  
 **I want** to see my personal growing metrics on my home screen,  
 **So that** I feel motivated and can track my journey.
@@ -798,7 +722,7 @@
 
 ---
 
-### E11-US4: Staff Views Individual Client Report
+### E10-US4: Staff Views Individual Client Report
 **As a** staff member,  
 **I want** to view a detailed report for any individual client,  
 **So that** I can assess their progress and give personalized support.
@@ -812,9 +736,9 @@
 
 ---
 
-## EPIC 12 — Admin Panel
+## EPIC 11 — Admin Panel
 
-### E12-US1: Admin Manages Users
+### E11-US1: Admin Manages Users
 **As an** admin,  
 **I want** to manage all platform users from the admin panel,  
 **So that** I can handle account issues and maintain platform integrity.
@@ -828,7 +752,7 @@
 
 ---
 
-### E12-US2: Admin Manages Batches
+### E11-US2: Admin Manages Batches
 **As an** admin,  
 **I want** to create, edit, and manage all training batches from the admin panel,  
 **So that** the enrollment pipeline runs smoothly.
@@ -842,7 +766,7 @@
 
 ---
 
-### E12-US3: Admin Manages Content & Crops
+### E11-US3: Admin Manages Content & Crops
 **As an** admin,  
 **I want** to manage all crop data, checklist templates, and premium content from one place,  
 **So that** the content library stays accurate and up to date.
@@ -856,7 +780,7 @@
 
 ---
 
-### E12-US4: Admin Sends Platform Announcements
+### E11-US4: Admin Sends Platform Announcements
 **As an** admin,  
 **I want** to send platform-wide announcements,  
 **So that** all users are informed of important updates or changes.
@@ -870,9 +794,9 @@
 
 ---
 
-## EPIC 13 — PWA & Cross-Platform Readiness
+## EPIC 12 — PWA & Cross-Platform Readiness
 
-### E13-US1: Flutter PWA Build Configuration
+### E12-US1: Flutter PWA Build Configuration
 **As a** developer,  
 **I want** Flutter configured to build a production-ready PWA,  
 **So that** clients can install and use the app from any browser without an app store.
@@ -886,7 +810,7 @@
 
 ---
 
-### E13-US2: Offline Checklist Access
+### E12-US2: Offline Checklist Access
 **As a** client,  
 **I want** to view and complete my daily checklist even when offline,  
 **So that** poor connectivity doesn't interrupt my growing routine.
@@ -900,7 +824,7 @@
 
 ---
 
-### E13-US3: Responsive Layout
+### E12-US3: Responsive Layout
 **As a** user,  
 **I want** the app to work well on mobile, tablet, and desktop,  
 **So that** clients on phones and staff on desktops both have a good experience.
@@ -914,7 +838,7 @@
 
 ---
 
-### E13-US4: PWA Deployment via Nginx
+### E12-US4: PWA Deployment via Nginx
 **As a** DevOps engineer,  
 **I want** the Flutter PWA deployed and served via Nginx,  
 **So that** clients can access it from the company's custom domain.
@@ -928,67 +852,9 @@
 
 ---
 
-## EPIC 14 — Security & Compliance
+## EPIC 13 — Testing
 
-### E14-US1: Input Validation & Sanitisation
-**As a** platform,  
-**I want** all API inputs validated and sanitised,  
-**So that** injection attacks and malformed data cannot compromise the system.
-
-**Acceptance Criteria:**
-- [ ] Spring Boot Bean Validation (`@Valid`) on all request DTOs
-- [ ] SQL injection prevented via JPA parameterized queries
-- [ ] File upload validation: type whitelist (jpg, png, pdf, mp4), size limits
-- [ ] XSS prevention: HTML escaped in all user-generated content
-- [ ] Validation errors return `400` with field-level details
-
----
-
-### E14-US2: Rate Limiting
-**As a** platform,  
-**I want** API rate limiting enforced,  
-**So that** brute-force and abuse attempts are blocked.
-
-**Acceptance Criteria:**
-- [ ] Login endpoint: max 5 attempts per 15 minutes per IP
-- [ ] OTP endpoint: max 3 requests per 10 minutes per phone
-- [ ] General API: max 100 requests per minute per authenticated user
-- [ ] Rate limit exceeded returns `429 Too Many Requests`
-- [ ] Rate limit headers included in response
-
----
-
-### E14-US3: Data Privacy
-**As a** platform,  
-**I want** basic data privacy practices implemented,  
-**So that** client data is handled responsibly.
-
-**Acceptance Criteria:**
-- [ ] Privacy policy page accessible without login
-- [ ] Clients can request account deletion from settings
-- [ ] Account deletion anonymises personal data within 30 days
-- [ ] Sensitive fields (phone, email) encrypted at rest
-- [ ] Data access logged for audit by Super Admin
-
----
-
-### E14-US4: Pre-Launch Security Checklist
-**As a** platform,  
-**I want** a security audit completed before production launch,  
-**So that** known vulnerabilities are addressed before real clients use the system.
-
-**Acceptance Criteria:**
-- [ ] OWASP Top 10 checklist reviewed and signed off
-- [ ] All API endpoints require authentication (no accidental public endpoints)
-- [ ] Secrets scanned in git history
-- [ ] Dependency vulnerability scan run (OWASP Dependency-Check)
-- [ ] Security sign-off documented before go-live
-
----
-
-## EPIC 15 — Testing
-
-### E15-US1: Backend Unit Tests
+### E13-US1: Backend Unit Tests
 **As a** backend developer,  
 **I want** unit tests for all service-layer business logic,  
 **So that** regressions are caught automatically before deployment.
@@ -1002,7 +868,7 @@
 
 ---
 
-### E15-US2: Backend Integration Tests
+### E13-US2: Backend Integration Tests
 **As a** backend developer,  
 **I want** integration tests for all API endpoints,  
 **So that** the full request-response cycle is validated including DB interactions.
@@ -1016,7 +882,7 @@
 
 ---
 
-### E15-US3: Flutter Widget Tests
+### E13-US3: Flutter Widget Tests
 **As a** Flutter developer,  
 **I want** widget tests for all key screens,  
 **So that** UI regressions are caught without manual testing.
@@ -1030,7 +896,7 @@
 
 ---
 
-### E15-US4: End-to-End Tests
+### E13-US4: End-to-End Tests
 **As a** QA engineer,  
 **I want** end-to-end tests for the critical user journeys,  
 **So that** the most important flows are verified in an integrated environment.
@@ -1044,7 +910,7 @@
 
 ---
 
-### E15-US5: Load Testing
+### E13-US5: Load Testing
 **As a** DevOps engineer,  
 **I want** load tests run before launch,  
 **So that** the system can handle expected concurrent users without degradation.
@@ -1055,6 +921,156 @@
 - [ ] Endpoints tested: login, home/checklist fetch, journal submit, ticket create
 - [ ] Acceptance: p95 response time < 500ms, error rate < 1%
 - [ ] Load test report documented with findings and tuning applied
+
+---
+
+## ── PRE-LAUNCH PHASE ─────────────────────────────────────────────────────────
+
+> The following three EPICs (14, 15, 16) are deferred until local development and the Flutter app are complete. None of these stories are required to run and test the platform locally.
+
+---
+
+## EPIC 14 — Infrastructure & DevOps
+
+### E14-US1: VPS Provisioning
+**As a** DevOps engineer,  
+**I want** a production-ready VPS set up,  
+**So that** all services can be deployed reliably.
+
+**Acceptance Criteria:**
+- [ ] VPS provisioned (Hetzner CX21 or equivalent — minimum 2GB RAM)
+- [ ] SSH key-based access configured, password login disabled
+- [ ] Firewall rules: only ports 22, 80, 443 open
+- [ ] Swap space configured (2GB minimum)
+- [ ] Server timezone set to IST
+
+---
+
+### E14-US2: Docker & Docker Compose Setup
+**As a** DevOps engineer,  
+**I want** all services containerized with Docker Compose,  
+**So that** the full stack can be started and stopped with a single command.
+
+**Acceptance Criteria:**
+- [ ] `docker-compose.yml` includes: Spring Boot app, PostgreSQL, Redis, Nginx
+- [ ] Named volumes configured for PostgreSQL data persistence
+- [ ] Health checks defined for each service
+- [ ] `.env.example` provided with all required variables
+- [ ] `docker-compose up` starts full stack locally without errors
+
+---
+
+### E14-US3: CI/CD Pipeline
+**As a** developer,  
+**I want** automated build, test, and deploy pipelines via GitHub Actions,  
+**So that** every push is validated and deployable without manual steps.
+
+**Acceptance Criteria:**
+- [ ] PR pipeline: build + unit tests + lint for both backend and Flutter
+- [ ] Merge to `main`: auto-deploy to staging
+- [ ] Manual trigger: deploy to production with confirmation step
+- [ ] Notification on pipeline failure (email or Slack)
+- [ ] Pipeline runtime under 10 minutes for standard builds
+
+---
+
+### E14-US4: PostgreSQL Setup & Backup
+**As a** DevOps engineer,  
+**I want** PostgreSQL configured with automated backups,  
+**So that** data is never permanently lost.
+
+**Acceptance Criteria:**
+- [ ] PostgreSQL running in Docker with persistent volume
+- [ ] Daily automated backup to object storage (Backblaze B2 or S3-compatible)
+- [ ] Backup retention: 30 days
+- [ ] Restore procedure documented and tested
+- [ ] Backup success/failure alerts configured
+
+---
+
+### E14-US5: Nginx Reverse Proxy & SSL
+**As a** DevOps engineer,  
+**I want** Nginx configured as a reverse proxy with SSL termination,  
+**So that** all traffic is served securely over HTTPS.
+
+**Acceptance Criteria:**
+- [ ] Nginx proxies `/api/*` to Spring Boot and `/` to Flutter PWA static files
+- [ ] SSL certificate issued via Let's Encrypt (Certbot)
+- [ ] Auto-renewal configured for SSL certificate
+- [ ] HTTP redirects to HTTPS
+- [ ] Gzip compression enabled for static assets
+
+---
+
+### E14-US6: Logging & Monitoring
+**As a** DevOps engineer,  
+**I want** centralized logging and uptime monitoring,  
+**So that** issues are detected and diagnosed quickly.
+
+**Acceptance Criteria:**
+- [ ] Spring Boot logs shipped to Grafana Loki or Papertrail
+- [ ] Uptime monitoring configured (UptimeRobot free tier minimum)
+- [ ] Alert triggered if service down for more than 2 minutes
+- [ ] Error rate dashboard available
+- [ ] Log retention policy: 90 days
+
+---
+
+## EPIC 15 — Security & Compliance
+
+### E15-US1: Input Validation & Sanitisation
+**As a** platform,  
+**I want** all API inputs validated and sanitised,  
+**So that** injection attacks and malformed data cannot compromise the system.
+
+**Acceptance Criteria:**
+- [ ] Spring Boot Bean Validation (`@Valid`) on all request DTOs
+- [ ] SQL injection prevented via JPA parameterized queries
+- [ ] File upload validation: type whitelist (jpg, png, pdf, mp4), size limits
+- [ ] XSS prevention: HTML escaped in all user-generated content
+- [ ] Validation errors return `400` with field-level details
+
+---
+
+### E15-US2: Rate Limiting
+**As a** platform,  
+**I want** API rate limiting enforced,  
+**So that** brute-force and abuse attempts are blocked.
+
+**Acceptance Criteria:**
+- [ ] Login endpoint: max 5 attempts per 15 minutes per IP
+- [ ] OTP endpoint: max 3 requests per 10 minutes per phone
+- [ ] General API: max 100 requests per minute per authenticated user
+- [ ] Rate limit exceeded returns `429 Too Many Requests`
+- [ ] Rate limit headers included in response
+
+---
+
+### E15-US3: Data Privacy
+**As a** platform,  
+**I want** basic data privacy practices implemented,  
+**So that** client data is handled responsibly.
+
+**Acceptance Criteria:**
+- [ ] Privacy policy page accessible without login
+- [ ] Clients can request account deletion from settings
+- [ ] Account deletion anonymises personal data within 30 days
+- [ ] Sensitive fields (phone, email) encrypted at rest
+- [ ] Data access logged for audit by Super Admin
+
+---
+
+### E15-US4: Pre-Launch Security Checklist
+**As a** platform,  
+**I want** a security audit completed before production launch,  
+**So that** known vulnerabilities are addressed before real clients use the system.
+
+**Acceptance Criteria:**
+- [ ] OWASP Top 10 checklist reviewed and signed off
+- [ ] All API endpoints require authentication (no accidental public endpoints)
+- [ ] Secrets scanned in git history
+- [ ] Dependency vulnerability scan run (OWASP Dependency-Check)
+- [ ] Security sign-off documented before go-live
 
 ---
 
@@ -1130,8 +1146,8 @@
 
 ---
 
-*Last Updated: 2025 | Version 2.0*  
-*Maintained by: [Team Name]*  
+*Last Updated: April 2026 | Version 3.0*  
+*Maintained by: greene Team*
 
 ---
 
@@ -1140,3 +1156,4 @@
 |---|---|---|
 | 1.0 | 2025 | Initial draft — 16 EPICs, 79 stories |
 | 2.0 | 2025 | Revised to single-company model. Removed multi-trainer architecture, marketplace (Phase 2), payments (Phase 2), CRM. Added EPIC 8 (Tray Journal), revised EPIC 9 (Support Tickets). Updated roles to Super Admin / Admin / Staff / Client. Revised client journey, content unlock model, batch management. Total: 17 EPICs, 85 user stories |
+| 3.0 | April 2026 | Reordered EPICs into three development phases. Infrastructure & DevOps (was EPIC 2) moved to EPIC 14 in the pre-launch phase. Security & Compliance (was EPIC 14) renumbered to EPIC 15. Launch & Post-Launch (was EPIC 16) renumbered to EPIC 16 (unchanged). All domain EPICs renumbered to fill the gap (EPICs 3–13 shift to EPICs 2–13). No story content changed. |
