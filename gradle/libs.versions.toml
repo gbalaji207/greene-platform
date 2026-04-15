@@ -49,6 +49,7 @@ jjwt-api = { module = "io.jsonwebtoken:jjwt-api", version.ref = "jjwt" }
 jjwt-impl = { module = "io.jsonwebtoken:jjwt-impl", version.ref = "jjwt" }
 jjwt-jackson = { module = "io.jsonwebtoken:jjwt-jackson", version.ref = "jjwt" }
 aws-ses = { module = "software.amazon.awssdk:ses", version.ref = "awsSdk" }
+aws-s3  = { module = "software.amazon.awssdk:s3",  version.ref = "awsSdk" }
 
 # Database
 postgresql-driver = { module = "org.postgresql:postgresql", version.ref = "postgresql" }
