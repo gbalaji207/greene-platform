@@ -2,35 +2,46 @@
 
 
 import io.mockk.*
+import com.greene.core.auth.domain.OtpPurpose
+import com.greene.core.auth.domain.RefreshTokenEntity
 import com.greene.core.auth.domain.UserEntity
 import com.greene.core.auth.domain.UserRole
 import com.greene.core.auth.domain.UserStatus
-import com.greene.core.auth.domain.OtpPurpose
+import com.greene.core.auth.dto.LogoutResponse
 import com.greene.core.auth.dto.TokenPairDto
+import com.greene.core.auth.repository.RefreshTokenRepository
 import com.greene.core.auth.repository.UserRepository
 import com.greene.core.exception.PlatformException
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.springframework.http.HttpStatus
 import java.time.Instant
+import java.time.temporal.ChronoUnit
+import java.util.Optional
 import java.util.UUID
 
 class AuthServiceTest {
 
-    private val userRepository   : UserRepository    = mockk()
-    private val otpService       : OtpService        = mockk()
-    private val rateLimitService : RateLimitService  = mockk()
-    private val emailService     : EmailService      = mockk()
-    private val jwtService       : JwtService        = mockk()
+    private val userRepository      : UserRepository       = mockk()
+    private val otpService          : OtpService           = mockk()
+    private val rateLimitService    : RateLimitService     = mockk()
+    private val emailService        : EmailService         = mockk()
+    private val jwtService          : JwtService           = mockk()
+    private val refreshTokenRepository : RefreshTokenRepository = mockk()
 
     private val service = AuthService(
-        userRepository, otpService, rateLimitService, emailService, jwtService
+        userRepository, otpService, rateLimitService, emailService, jwtService, refreshTokenRepository
     )
 
     private val email      = "User@Example.com"   // mixed-case to verify normalisation
     private val normalised = "user@example.com"
     private val userId     = UUID.randomUUID()
+
+    // Raw opaque token (UUID format, as issued to the client) and its simulated hash
+    private val rawRefreshToken = "550e8400-e29b-41d4-a716-446655440000"
+    private val tokenHash       = "3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c"
 
     // ── identify ──────────────────────────────────────────────────────────────
 
@@ -277,6 +288,180 @@ class AuthServiceTest {
         phone  = "+919876543210",
         role   = UserRole.CLIENT,
         status = UserStatus.SUSPENDED,
+    )
+
+    // ── refresh ───────────────────────────────────────────────────────────────
+
+    @Test
+    fun `refresh_whenTokenValid_shouldReturnNewTokenPairAndRevokeOldToken`() {
+        val entity  = activeRefreshTokenEntity()
+        val newPair = TokenPairDto("new-access", "new-refresh", 900)
+
+        every { jwtService.hashToken(rawRefreshToken) }               returns tokenHash
+        every { refreshTokenRepository.findByTokenHash(tokenHash) }   returns entity
+        every { refreshTokenRepository.save(entity) }                  returns entity
+        every { userRepository.findById(userId) }                      returns Optional.of(activeUser())
+        every { jwtService.generateTokenPair(any()) }                  returns newPair
+
+        val result = service.refresh(rawRefreshToken)
+
+        assertEquals("new-access",   result.accessToken)
+        assertEquals("new-refresh",  result.refreshToken)
+        assertEquals(900,            result.expiresIn)
+        assertNotNull(entity.revokedAt, "Old token must have revokedAt set after rotation")
+    }
+
+    @Test
+    fun `refresh_whenTokenNotFound_shouldThrowRefreshTokenInvalid401`() {
+        every { jwtService.hashToken(rawRefreshToken) }             returns tokenHash
+        every { refreshTokenRepository.findByTokenHash(tokenHash) } returns null
+
+        val ex = assertThrows<PlatformException> { service.refresh(rawRefreshToken) }
+
+        assertEquals("REFRESH_TOKEN_INVALID", ex.code)
+        assertEquals(HttpStatus.UNAUTHORIZED,  ex.httpStatus)
+        assertEquals("Invalid session. Please log in again.", ex.message)
+    }
+
+    @Test
+    fun `refresh_whenTokenRevoked_shouldThrowRefreshTokenInvalid401`() {
+        every { jwtService.hashToken(rawRefreshToken) }             returns tokenHash
+        every { refreshTokenRepository.findByTokenHash(tokenHash) } returns revokedRefreshTokenEntity()
+
+        val ex = assertThrows<PlatformException> { service.refresh(rawRefreshToken) }
+
+        assertEquals("REFRESH_TOKEN_INVALID", ex.code)
+        assertEquals(HttpStatus.UNAUTHORIZED,  ex.httpStatus)
+    }
+
+    @Test
+    fun `refresh_whenTokenExpired_shouldThrowRefreshTokenExpired401`() {
+        every { jwtService.hashToken(rawRefreshToken) }             returns tokenHash
+        every { refreshTokenRepository.findByTokenHash(tokenHash) } returns expiredRefreshTokenEntity()
+
+        val ex = assertThrows<PlatformException> { service.refresh(rawRefreshToken) }
+
+        assertEquals("REFRESH_TOKEN_EXPIRED", ex.code)
+        assertEquals(HttpStatus.UNAUTHORIZED,  ex.httpStatus)
+        assertEquals("Your session has expired. Please log in again.", ex.message)
+    }
+
+    @Test
+    fun `refresh_shouldRevokeOldTokenBeforeIssuingNewOne`() {
+        val entity      = activeRefreshTokenEntity()
+        val savedSlot   = slot<RefreshTokenEntity>()
+        val newPair     = TokenPairDto("at", "rt", 900)
+
+        every { jwtService.hashToken(rawRefreshToken) }                    returns tokenHash
+        every { refreshTokenRepository.findByTokenHash(tokenHash) }        returns entity
+        every { refreshTokenRepository.save(capture(savedSlot)) }          returns entity
+        every { userRepository.findById(userId) }                          returns Optional.of(activeUser())
+        every { jwtService.generateTokenPair(any()) }                      returns newPair
+
+        service.refresh(rawRefreshToken)
+
+        // Old token must be revoked (revokedAt set) in the save call
+        assertNotNull(savedSlot.captured.revokedAt, "Entity passed to save() must have revokedAt set")
+
+        // save() must be called strictly before generateTokenPair()
+        verifyOrder {
+            refreshTokenRepository.save(any())
+            jwtService.generateTokenPair(any())
+        }
+    }
+
+    @Test
+    fun `refresh_whenSameTokenUsedTwice_shouldReturn401OnSecondCall`() {
+        val entity  = activeRefreshTokenEntity()   // revokedAt = null initially
+        val newPair = TokenPairDto("at", "rt", 900)
+
+        every { jwtService.hashToken(rawRefreshToken) }             returns tokenHash
+        every { refreshTokenRepository.findByTokenHash(tokenHash) } returns entity   // same mutable object each time
+        every { refreshTokenRepository.save(entity) }               returns entity
+        every { userRepository.findById(userId) }                   returns Optional.of(activeUser())
+        every { jwtService.generateTokenPair(any()) }               returns newPair
+
+        // First call: entity.revokedAt is null → succeeds and sets revokedAt on the entity
+        service.refresh(rawRefreshToken)
+
+        // Second call: the mock returns the SAME entity, which now has revokedAt set
+        val ex = assertThrows<PlatformException> { service.refresh(rawRefreshToken) }
+
+        assertEquals("REFRESH_TOKEN_INVALID", ex.code)
+        assertEquals(HttpStatus.UNAUTHORIZED,  ex.httpStatus)
+    }
+
+    // ── logout ────────────────────────────────────────────────────────────────
+
+    @Test
+    fun `logout_whenTokenActive_shouldRevokeTokenAndReturnSuccess`() {
+        val entity = activeRefreshTokenEntity()
+
+        every { jwtService.hashToken(rawRefreshToken) }             returns tokenHash
+        every { refreshTokenRepository.findByTokenHash(tokenHash) } returns entity
+        every { refreshTokenRepository.save(entity) }               returns entity
+
+        val result = service.logout(rawRefreshToken)
+
+        assertEquals(LogoutResponse(message = "Logged out successfully"), result)
+        assertNotNull(entity.revokedAt, "Token must be revoked on logout")
+        verify(exactly = 1) { refreshTokenRepository.save(entity) }
+    }
+
+    @Test
+    fun `logout_whenTokenNotFound_shouldReturnSuccessSilently`() {
+        every { jwtService.hashToken(rawRefreshToken) }             returns tokenHash
+        every { refreshTokenRepository.findByTokenHash(tokenHash) } returns null
+
+        val result = service.logout(rawRefreshToken)
+
+        assertEquals(LogoutResponse(message = "Logged out successfully"), result)
+        verify(exactly = 0) { refreshTokenRepository.save(any()) }
+    }
+
+    @Test
+    fun `logout_whenTokenAlreadyRevoked_shouldReturnSuccessSilently`() {
+        every { jwtService.hashToken(rawRefreshToken) }             returns tokenHash
+        every { refreshTokenRepository.findByTokenHash(tokenHash) } returns revokedRefreshTokenEntity()
+
+        val result = service.logout(rawRefreshToken)
+
+        assertEquals(LogoutResponse(message = "Logged out successfully"), result)
+        verify(exactly = 0) { refreshTokenRepository.save(any()) }
+    }
+
+    @Test
+    fun `logout_shouldOnlyRevokeSuppliedToken_notAllUserTokens`() {
+        val entity = activeRefreshTokenEntity()
+
+        every { jwtService.hashToken(rawRefreshToken) }             returns tokenHash
+        every { refreshTokenRepository.findByTokenHash(tokenHash) } returns entity
+        every { refreshTokenRepository.save(entity) }               returns entity
+
+        service.logout(rawRefreshToken)
+
+        verify(exactly = 0) { refreshTokenRepository.revokeAllActiveByUserId(any(), any()) }
+    }
+
+    // ── E2-US3 helpers ────────────────────────────────────────────────────────
+
+    private fun activeRefreshTokenEntity() = RefreshTokenEntity(
+        userId    = userId,
+        tokenHash = tokenHash,
+        expiresAt = Instant.now().plus(30, ChronoUnit.DAYS),
+    )
+
+    private fun revokedRefreshTokenEntity() = RefreshTokenEntity(
+        userId    = userId,
+        tokenHash = tokenHash,
+        expiresAt = Instant.now().plus(30, ChronoUnit.DAYS),
+        revokedAt = Instant.now().minusSeconds(60),
+    )
+
+    private fun expiredRefreshTokenEntity() = RefreshTokenEntity(
+        userId    = userId,
+        tokenHash = tokenHash,
+        expiresAt = Instant.now().minusSeconds(1),   // one second in the past
     )
 }
 

@@ -53,3 +53,14 @@ data class ResendOtpRequest(
     @field:Email(message = "Invalid email format")
     val email: String? = null,
 )
+
+data class RefreshTokenRequest(
+    @field:NotBlank(message = "Refresh token is required")
+    val refreshToken: String? = null,
+)
+
+data class LogoutRequest(
+    @field:NotBlank(message = "Refresh token is required")
+    val refreshToken: String? = null,
+)
+

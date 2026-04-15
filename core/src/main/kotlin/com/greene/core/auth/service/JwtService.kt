@@ -35,8 +35,8 @@ import java.util.UUID
  * ── Refresh token ────────────────────────────────────────────────────────────
  *  Format  : SecureRandom UUID (opaque, base-64 URL safe string not needed — raw UUID)
  *  Storage : SHA-256 hex digest stored in refresh_tokens.token_hash
- *  Expiry  : 30 days (hardcoded; E2-US3 will make this configurable)
- *  Rotation: handled in E2-US3 (not part of this story)
+ *  Expiry  : jwt.refresh-token-expiry-days config (default 30 days)
+ *  Rotation: old token revoked by AuthService.refresh() before calling generateTokenPair()
  */
 @Service
 class JwtService(
@@ -47,7 +47,6 @@ class JwtService(
     companion object {
         private const val CLAIM_EMAIL = "email"
         private const val CLAIM_ROLE  = "role"
-        private const val REFRESH_TOKEN_TTL_DAYS = 30L
     }
 
     // ── Lazy key initialisation ───────────────────────────────────────────────
@@ -99,7 +98,7 @@ class JwtService(
             RefreshTokenEntity(
                 userId    = userId,
                 tokenHash = sha256Hex(rawRefreshToken),
-                expiresAt = now.plus(REFRESH_TOKEN_TTL_DAYS, ChronoUnit.DAYS),
+                expiresAt = now.plus(jwtProperties.refreshTokenExpiryDays.toLong(), ChronoUnit.DAYS),
             )
         )
 
@@ -128,6 +127,15 @@ class JwtService(
             .build()
             .parseSignedClaims(token)
             .payload
+
+    // ── Hashing utility ──────────────────────────────────────────────────────
+
+    /**
+     * Returns the lowercase hex SHA-256 digest of [input].
+     * Used by callers (e.g. AuthService) to hash a raw refresh token before
+     * looking it up or saving it.
+     */
+    fun hashToken(input: String): String = sha256Hex(input)
 
     // ── Private helpers ───────────────────────────────────────────────────────
 
