@@ -86,13 +86,13 @@ class GlobalExceptionHandlerUnitTest {
     // ── HttpMessageNotReadableException ──────────────────────────────────────
 
     @Test
-    fun `malformed request body returns 400 with MALFORMED_REQUEST code`() {
+    fun `malformed request body returns 400 with VALIDATION_ERROR code`() {
         val ex = HttpMessageNotReadableException("bad json", MockHttpInputMessage(ByteArray(0)))
 
         val response = handler.handleUnreadableMessage(ex)
 
         assertEquals(HttpStatus.BAD_REQUEST, response.statusCode)
-        assertEquals("MALFORMED_REQUEST", response.body!!.error.code)
+        assertEquals("VALIDATION_ERROR", response.body!!.error.code)
     }
 
     // ── Method not supported ─────────────────────────────────────────────────
