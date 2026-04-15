@@ -115,6 +115,7 @@ class AuthServiceTest {
     fun `register creates new user and sends OTP when email not found`() {
         val savedUser = pendingUser()
         every { userRepository.findByEmail(normalised) } returns null
+        every { userRepository.findByPhone("+919876543210") } returns null
         justRun { rateLimitService.checkAndIncrement(normalised) }
         every { userRepository.save(any()) } returns savedUser
         every { otpService.generateAndPersist(userId, OtpPurpose.EMAIL_VERIFICATION) } returns "111111"
@@ -135,6 +136,7 @@ class AuthServiceTest {
     fun `register updates PENDING user fields and sends fresh OTP on re-registration`() {
         val pending = pendingUser(name = "OldName", phone = "+910000000000")
         every { userRepository.findByEmail(normalised) } returns pending
+        every { userRepository.findByPhone("+919876543210") } returns null
         justRun { rateLimitService.checkAndIncrement(normalised) }
         every { userRepository.save(pending) } returns pending
         every { otpService.generateAndPersist(userId, OtpPurpose.EMAIL_VERIFICATION) } returns "222222"
@@ -149,6 +151,7 @@ class AuthServiceTest {
     @Test
     fun `register normalises email to lowercase before persisting`() {
         every { userRepository.findByEmail(normalised) } returns null
+        every { userRepository.findByPhone("+919876543210") } returns null
         justRun { rateLimitService.checkAndIncrement(normalised) }
         every { userRepository.save(any()) } returns pendingUser()
         every { otpService.generateAndPersist(any(), any()) } returns "333333"
