@@ -17,6 +17,8 @@ import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.MissingServletRequestParameterException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException
+import java.util.UUID
 import org.springframework.web.multipart.MaxUploadSizeExceededException
 import org.springframework.web.multipart.support.MissingServletRequestPartException
 import org.springframework.web.servlet.resource.NoResourceFoundException
@@ -37,7 +39,9 @@ class GlobalExceptionHandler {
     @ExceptionHandler(PlatformException::class)
     fun handlePlatformException(ex: PlatformException): ResponseEntity<ApiError> {
         log.debug("Platform exception: code={} status={} message={}", ex.code, ex.httpStatus, ex.message)
-        return ResponseEntity.status(ex.httpStatus).body(ApiError.of(code = ex.code, message = ex.message))
+        return ResponseEntity.status(ex.httpStatus).body(
+            ApiError(ApiError.ErrorBody(code = ex.code, message = ex.message, details = ex.details))
+        )
     }
 
     /**
@@ -102,6 +106,22 @@ class GlobalExceptionHandler {
         log.debug("Missing request parameter: {}", ex.parameterName)
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
             .body(ApiError.of(code = "VALIDATION_ERROR", message = "Validation failed"))
+    }
+
+    /**
+     * Path/query variable type mismatch — e.g. a non-UUID string supplied where a UUID
+     * path variable is expected (`GET /api/v1/batches/not-a-uuid`).
+     * Returns 400 with a field-level detail pinpointing the offending parameter.
+     */
+    @ExceptionHandler(MethodArgumentTypeMismatchException::class)
+    fun handleMethodArgumentTypeMismatch(ex: MethodArgumentTypeMismatchException): ResponseEntity<ApiError> {
+        log.debug("Type mismatch for parameter '{}': {}", ex.name, ex.message)
+        val detail = when (ex.requiredType) {
+            UUID::class.java -> ErrorDetail(field = ex.name, message = "invalid UUID format")
+            else -> ErrorDetail(field = ex.name, message = "invalid value")
+        }
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+            .body(ApiError.validation(message = "Request validation failed", details = listOf(detail)))
     }
 
     /**
