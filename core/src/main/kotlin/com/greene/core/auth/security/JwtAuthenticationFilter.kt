@@ -1,12 +1,11 @@
 package com.greene.core.auth.security
 
 import com.greene.core.auth.service.JwtService
-import io.jsonwebtoken.JwtException
 import jakarta.servlet.FilterChain
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import org.springframework.context.annotation.Lazy
-import org.springframework.http.MediaType
+import org.springframework.security.authentication.InsufficientAuthenticationException
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.core.context.SecurityContextHolder
@@ -23,28 +22,37 @@ import org.springframework.web.filter.OncePerRequestFilter
  * Bearer token, which never happens in existing unit test slices.
  *
  * Behaviour per request:
- *  - No `Authorization` header  → unauthenticated; Spring Security enforces 401 for
+ *  - Path in permitAll list (auth endpoints, Swagger) → filter is skipped entirely.
+ *  - No `Authorization` header → unauthenticated; Spring Security enforces 401 for
  *    protected routes via [JwtAuthenticationEntryPoint].
- *  - `Authorization: Bearer <token>` present and VALID → extracts `sub` (userId),
- *    `email`, and `role` claims; places a [UsernamePasswordAuthenticationToken] in
- *    the [SecurityContextHolder] so downstream code can read the principal.
- *  - `Authorization: Bearer <token>` present but INVALID/EXPIRED → returns 401
- *    immediately (filter chain is not continued) so the client gets a clear error
- *    rather than a misleading "no auth" 401 from the entry point.
+ *  - `Authorization: Bearer <token>` present and VALID → extracts `sub` (userId) and
+ *    `role` claims; places a [UsernamePasswordAuthenticationToken] in the
+ *    [SecurityContextHolder] so downstream code can read the principal.
+ *  - `Authorization: Bearer <token>` present but INVALID/EXPIRED → calls
+ *    [JwtAuthenticationEntryPoint.commence] directly so the client gets a 401
+ *    with the standard error envelope (filter chain is not continued).
  *
  * The principal set on the authentication token is the `sub` claim (userId as String).
- * Future E2 stories can extend this to a richer `AuthenticatedUser` object.
  */
 @Component
 class JwtAuthenticationFilter(
     @Lazy private val jwtService: JwtService,
+    @Lazy private val entryPoint: JwtAuthenticationEntryPoint,
 ) : OncePerRequestFilter() {
 
     companion object {
         private const val BEARER_PREFIX = "Bearer "
-        private val INVALID_TOKEN_BODY = """
-            {"error":{"code":"INVALID_TOKEN","message":"Token is invalid or has expired.","details":[]}}
-        """.trimIndent()
+    }
+
+    /**
+     * Skip this filter entirely for all public endpoints so that valid auth headers
+     * are never required on paths that appear in the SecurityConfig permitAll list.
+     */
+    override fun shouldNotFilter(request: HttpServletRequest): Boolean {
+        val path = request.requestURI
+        return path.startsWith("/api/v1/auth/") ||
+               path.startsWith("/swagger-ui")   ||
+               path.startsWith("/v3/api-docs")
     }
 
     override fun doFilterInternal(
@@ -55,6 +63,8 @@ class JwtAuthenticationFilter(
         val authHeader = request.getHeader("Authorization")
 
         // ── No token supplied — continue unauthenticated ──────────────────────
+        // Spring Security will call JwtAuthenticationEntryPoint for any endpoint
+        // that requires authentication, producing a correctly formatted 401.
         if (authHeader.isNullOrBlank() || !authHeader.startsWith(BEARER_PREFIX)) {
             filterChain.doFilter(request, response)
             return
@@ -82,20 +92,16 @@ class JwtAuthenticationFilter(
 
             filterChain.doFilter(request, response)
 
-        } catch (ex: JwtException) {
-            // ── Invalid / expired token — reject immediately ──────────────────
-            response.status      = HttpServletResponse.SC_UNAUTHORIZED
-            response.contentType = MediaType.APPLICATION_JSON_VALUE
-            response.writer.write(INVALID_TOKEN_BODY)
+        } catch (ex: Exception) {
+            // ── Invalid / expired token — reject immediately via entry point ──
+            // Using the entry point directly ensures the 401 body matches the
+            // standard error envelope ("UNAUTHORIZED") for ALL failure modes.
+            entryPoint.commence(
+                request,
+                response,
+                InsufficientAuthenticationException(ex.message ?: "Invalid or expired token", ex),
+            )
             // Do NOT continue the filter chain.
-        } catch (ex: IllegalArgumentException) {
-            // Blank or malformed token string passed to parser.
-            response.status      = HttpServletResponse.SC_UNAUTHORIZED
-            response.contentType = MediaType.APPLICATION_JSON_VALUE
-            response.writer.write(INVALID_TOKEN_BODY)
         }
     }
 }
-
-
-
