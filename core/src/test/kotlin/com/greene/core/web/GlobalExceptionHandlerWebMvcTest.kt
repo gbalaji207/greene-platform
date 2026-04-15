@@ -47,13 +47,13 @@ class GlobalExceptionHandlerWebMvcTest {
 
     @Test
     @WithMockUser
-    fun `malformed json body returns 400 MALFORMED_REQUEST`() {
+    fun `malformed json body returns 400 VALIDATION_ERROR`() {
         mockMvc.post("/test/validate") {
             contentType = MediaType.APPLICATION_JSON
             content = """{ this is not json }"""
         }.andExpect {
             status { isBadRequest() }
-            jsonPath("$.error.code") { value("MALFORMED_REQUEST") }
+            jsonPath("$.error.code") { value("VALIDATION_ERROR") }
         }
     }
 

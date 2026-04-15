@@ -25,5 +25,15 @@ interface EmailService {
      * @param name User's display name, interpolated into the email body.
      */
     fun sendWelcome(to: String, name: String)
+
+    /**
+     * Sends a welcome email to a newly created staff account.
+     *
+     * The email contains login instructions (OTP-based) but no temporary password.
+     *
+     * @param to   Recipient email address.
+     * @param name Staff member's display name, interpolated into the email body.
+     */
+    fun sendStaffWelcome(to: String, name: String)
 }
 

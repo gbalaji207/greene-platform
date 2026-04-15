@@ -70,6 +70,32 @@ class AuthServiceTest {
         verify(exactly = 0) { otpService.generateAndPersist(any(), any()) }
     }
 
+    @Test
+    fun `identify throws ACCOUNT_SUSPENDED for SUSPENDED user`() {
+        every { userRepository.findByEmail(normalised) } returns suspendedUser()
+
+        val ex = assertThrows<PlatformException> {
+            service.identify(email)
+        }
+
+        assertEquals("ACCOUNT_SUSPENDED", ex.code)
+        assertEquals(HttpStatus.FORBIDDEN, ex.httpStatus)
+        assertEquals(
+            "Your account has been suspended. Please contact your administrator.",
+            ex.message,
+        )
+    }
+
+    @Test
+    fun `identify does not generate OTP and does not send email when account is SUSPENDED`() {
+        every { userRepository.findByEmail(normalised) } returns suspendedUser()
+
+        assertThrows<PlatformException> { service.identify(email) }
+
+        verify(exactly = 0) { otpService.generateAndPersist(any(), any()) }
+        verify(exactly = 0) { emailService.sendOtp(any(), any()) }
+    }
+
     // ── register ──────────────────────────────────────────────────────────────
 
     @Test
@@ -89,6 +115,7 @@ class AuthServiceTest {
     fun `register creates new user and sends OTP when email not found`() {
         val savedUser = pendingUser()
         every { userRepository.findByEmail(normalised) } returns null
+        every { userRepository.findByPhone("+919876543210") } returns null
         justRun { rateLimitService.checkAndIncrement(normalised) }
         every { userRepository.save(any()) } returns savedUser
         every { otpService.generateAndPersist(userId, OtpPurpose.EMAIL_VERIFICATION) } returns "111111"
@@ -109,6 +136,7 @@ class AuthServiceTest {
     fun `register updates PENDING user fields and sends fresh OTP on re-registration`() {
         val pending = pendingUser(name = "OldName", phone = "+910000000000")
         every { userRepository.findByEmail(normalised) } returns pending
+        every { userRepository.findByPhone("+919876543210") } returns null
         justRun { rateLimitService.checkAndIncrement(normalised) }
         every { userRepository.save(pending) } returns pending
         every { otpService.generateAndPersist(userId, OtpPurpose.EMAIL_VERIFICATION) } returns "222222"
@@ -123,6 +151,7 @@ class AuthServiceTest {
     @Test
     fun `register normalises email to lowercase before persisting`() {
         every { userRepository.findByEmail(normalised) } returns null
+        every { userRepository.findByPhone("+919876543210") } returns null
         justRun { rateLimitService.checkAndIncrement(normalised) }
         every { userRepository.save(any()) } returns pendingUser()
         every { otpService.generateAndPersist(any(), any()) } returns "333333"
