@@ -41,6 +41,9 @@ dependencies {
     // AWS SES — transactional email (OTP delivery, welcome emails)
     implementation(libs.aws.ses)
 
+    // AWS S3 — object storage (profile photos); also provides S3Presigner
+    implementation(libs.aws.s3)
+
     implementation(libs.jackson.module.kotlin)
 
     testImplementation(libs.spring.boot.starter.test)

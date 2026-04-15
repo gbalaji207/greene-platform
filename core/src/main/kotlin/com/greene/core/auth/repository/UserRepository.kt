@@ -18,6 +18,10 @@ interface UserRepository : JpaRepository<UserEntity, UUID> {
     /** True when [phone] belongs to any account whose email is NOT [email] (i.e. a different user). */
     fun existsByPhoneAndEmailNot(phone: String, email: String): Boolean
 
+    /** True when [phone] belongs to any account whose id is NOT [id].
+     *  Used by profile-update to detect phone conflicts across different users. */
+    fun existsByPhoneAndIdNot(phone: String, id: UUID): Boolean
+
     /**
      * Looks up a user by primary key only when their role matches [role].
      * Used by staff management endpoints so that a CLIENT or ADMIN id is treated

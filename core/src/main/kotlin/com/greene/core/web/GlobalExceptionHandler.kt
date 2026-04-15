@@ -14,8 +14,11 @@ import org.springframework.security.access.AccessDeniedException
 import org.springframework.security.core.AuthenticationException
 import org.springframework.web.HttpRequestMethodNotSupportedException
 import org.springframework.web.bind.MethodArgumentNotValidException
+import org.springframework.web.bind.MissingServletRequestParameterException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
+import org.springframework.web.multipart.MaxUploadSizeExceededException
+import org.springframework.web.multipart.support.MissingServletRequestPartException
 import org.springframework.web.servlet.resource.NoResourceFoundException
 
 @RestControllerAdvice
@@ -26,6 +29,10 @@ class GlobalExceptionHandler {
     /**
      * Domain exceptions thrown explicitly by any module.
      * The module controls the HTTP status, code, and message — no module-specific knowledge here.
+     *
+     * Uses [PlatformException.httpStatus] directly, so any status code is supported,
+     * including uncommon ones such as 413 (PAYLOAD_TOO_LARGE) and 415 (UNSUPPORTED_MEDIA_TYPE)
+     * thrown by ProfileService.
      */
     @ExceptionHandler(PlatformException::class)
     fun handlePlatformException(ex: PlatformException): ResponseEntity<ApiError> {
@@ -83,6 +90,46 @@ class GlobalExceptionHandler {
         return ResponseEntity
             .status(HttpStatus.BAD_REQUEST)
             .body(ApiError.of(code = "MALFORMED_REQUEST", message = "Request body is missing or malformed"))
+    }
+
+    /**
+     * Missing required `@RequestParam` — e.g. the `photo` field omitted from the
+     * multipart request on POST /api/v1/users/me/profile/photo.
+     * Spring throws this before the method body is entered.
+     */
+    @ExceptionHandler(MissingServletRequestParameterException::class)
+    fun handleMissingRequestParam(ex: MissingServletRequestParameterException): ResponseEntity<ApiError> {
+        log.debug("Missing request parameter: {}", ex.parameterName)
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+            .body(ApiError.of(code = "VALIDATION_ERROR", message = "Validation failed"))
+    }
+
+    /**
+     * Missing required multipart part — Spring 6 throws this (not [MissingServletRequestParameterException])
+     * when a required `@RequestParam MultipartFile` part is absent from the multipart request.
+     * Semantically equivalent to a missing parameter: map to 400 VALIDATION_ERROR.
+     */
+    @ExceptionHandler(MissingServletRequestPartException::class)
+    fun handleMissingRequestPart(ex: MissingServletRequestPartException): ResponseEntity<ApiError> {
+        log.debug("Missing multipart part: {}", ex.requestPartName)
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+            .body(ApiError.of(code = "VALIDATION_ERROR", message = "Validation failed"))
+    }
+
+    /**
+     * File exceeds the Spring multipart size limit configured in
+     * `spring.servlet.multipart.max-file-size` / `max-request-size`.
+     * This is thrown before the controller method is reached, so
+     * ProfileService's own FILE_TOO_LARGE check never runs for these oversized uploads.
+     *
+     * Mapped to 413 so clients receive the same error shape regardless of whether
+     * the file was rejected by Spring or by application logic.
+     */
+    @ExceptionHandler(MaxUploadSizeExceededException::class)
+    fun handleMaxUploadSizeExceeded(ex: MaxUploadSizeExceededException): ResponseEntity<ApiError> {
+        log.debug("Max upload size exceeded: {}", ex.message)
+        return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE)
+            .body(ApiError.of(code = "FILE_TOO_LARGE", message = "File size must not exceed 5MB"))
     }
 
     /**

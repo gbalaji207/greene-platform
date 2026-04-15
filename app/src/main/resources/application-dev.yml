@@ -6,6 +6,11 @@ spring:
     # optional: means startup succeeds even if the file is absent (e.g. in CI).
     import: "optional:file:.env[.properties]"
 
+  servlet:
+    multipart:
+      max-file-size: 6MB      # slightly above our 5MB limit so the controller handles the rejection
+      max-request-size: 6MB
+
   mail:
     host: localhost
     port: 1025
@@ -52,3 +57,10 @@ aws:
     region: ap-south-1
     from-address: noreply@greene.local
 
+# ── Object Storage (MinIO — local dev) ────────────────────────────────────────
+storage:
+  endpoint: http://localhost:9000
+  bucket: greene-dev
+  access-key: greeneminio
+  secret-key: greeneminio123
+  presigned-url-expiry-minutes: 60

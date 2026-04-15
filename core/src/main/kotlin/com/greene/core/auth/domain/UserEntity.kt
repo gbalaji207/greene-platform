@@ -54,6 +54,11 @@ class UserEntity(
 
     @Column
     var lastLoginAt: Instant? = null,
+
+    /** Storage key for the user's profile photo (e.g. profiles/{userId}/{uuid}.jpg).
+     *  NULL until the user uploads a photo. The pre-signed URL is derived at read time. */
+    @Column(name = "profile_photo_url", length = 500)
+    var profilePhotoUrl: String? = null,
 ) {
     /** Mirrors the DB trigger so the in-memory object stays consistent. */
     @PreUpdate
