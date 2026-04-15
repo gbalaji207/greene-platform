@@ -10,6 +10,8 @@ import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.http.converter.HttpMessageConversionException
 import org.springframework.http.converter.HttpMessageNotReadableException
+import org.springframework.security.access.AccessDeniedException
+import org.springframework.security.core.AuthenticationException
 import org.springframework.web.HttpRequestMethodNotSupportedException
 import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.annotation.ExceptionHandler
@@ -104,6 +106,28 @@ class GlobalExceptionHandler {
     fun handleNoResourceFound(ex: NoResourceFoundException): ResponseEntity<ApiError> {
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
             .body(ApiError.of(code = "ENDPOINT_NOT_FOUND", message = "The requested endpoint does not exist"))
+    }
+
+    /**
+     * Spring Security — insufficient role thrown by @PreAuthorize AOP proxy.
+     * ExceptionTranslationFilter only handles filter-level access denial; method-level
+     * AccessDeniedException propagates into the DispatcherServlet context and is caught here.
+     */
+    @ExceptionHandler(AccessDeniedException::class)
+    fun handleAccessDenied(ex: AccessDeniedException): ResponseEntity<ApiError> {
+        log.debug("Access denied: {}", ex.message)
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+            .body(ApiError.of("FORBIDDEN", "You do not have permission to perform this action."))
+    }
+
+    /**
+     * Spring Security — authentication failure from method-level security context.
+     */
+    @ExceptionHandler(AuthenticationException::class)
+    fun handleAuthentication(ex: AuthenticationException): ResponseEntity<ApiError> {
+        log.debug("Authentication exception: {}", ex.message)
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+            .body(ApiError.of("UNAUTHORIZED", "Authentication required. Please log in."))
     }
 
     /**

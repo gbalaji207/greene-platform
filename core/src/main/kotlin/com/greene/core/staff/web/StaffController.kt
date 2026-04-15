@@ -7,6 +7,7 @@ import com.greene.core.staff.service.StaffService
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
+import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.PatchMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
@@ -16,13 +17,12 @@ import org.springframework.web.bind.annotation.RestController
 import java.util.UUID
 
 /**
- * Staff management endpoints — admin-only operations.
+ * Staff management endpoints — ADMIN and SUPER_ADMIN only.
  *
  * Error codes thrown from [StaffService] are mapped to the correct HTTP status
  * by [com.greene.core.web.GlobalExceptionHandler] via
  * [com.greene.core.exception.PlatformException.httpStatus].
  */
-// TODO: @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
 @RestController
 @RequestMapping("/api/v1/staff")
 class StaffController(private val staffService: StaffService) {
@@ -34,6 +34,7 @@ class StaffController(private val staffService: StaffService) {
      * A welcome email with login instructions is sent immediately.
      * Returns 201 Created with the full staff account details.
      */
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
     @PostMapping
     fun createStaff(
         @Valid @RequestBody request: CreateStaffRequest,
@@ -49,6 +50,7 @@ class StaffController(private val staffService: StaffService) {
      * On suspension, all active refresh tokens for the user are immediately revoked.
      * Returns 200 OK with the updated id, status, and updatedAt timestamp.
      */
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
     @PatchMapping("/{id}/status")
     fun updateStatus(
         @PathVariable id: UUID,
