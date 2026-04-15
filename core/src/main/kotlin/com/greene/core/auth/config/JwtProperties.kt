@@ -11,6 +11,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties
  *     ...base64...
  *     -----END PRIVATE KEY-----
  *   access-token-expiry-minutes: 15
+ *   refresh-token-expiry-days: 30
  *
  * The private key must be a PKCS#8 PEM string (BEGIN PRIVATE KEY header).
  * In deployed environments, supply it via the JWT_PRIVATE_KEY environment variable.
@@ -27,5 +28,8 @@ data class JwtProperties(
 
     /** Access token lifetime. Encoded in the `exp` claim and returned as `expiresIn`. */
     val accessTokenExpiryMinutes: Int = 15,
+
+    /** Refresh token lifetime in days. Stored in refresh_tokens.expires_at. */
+    val refreshTokenExpiryDays: Int = 30,
 )
 

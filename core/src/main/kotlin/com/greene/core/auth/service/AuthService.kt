@@ -6,8 +6,11 @@ import com.greene.core.auth.domain.UserStatus
 import com.greene.core.auth.dto.AuthTokenResponse
 import com.greene.core.auth.dto.AuthUserDto
 import com.greene.core.auth.dto.IdentifyResponse
+import com.greene.core.auth.dto.LogoutResponse
 import com.greene.core.auth.dto.RegisterResponse
 import com.greene.core.auth.dto.ResendOtpResponse
+import com.greene.core.auth.dto.TokenPairDto
+import com.greene.core.auth.repository.RefreshTokenRepository
 import com.greene.core.auth.repository.UserRepository
 import com.greene.core.exception.PlatformException
 import org.springframework.http.HttpStatus
@@ -34,6 +37,7 @@ class AuthService(
     private val rateLimitService: RateLimitService,
     private val emailService: EmailService,
     private val jwtService: JwtService,
+    private val refreshTokenRepository: RefreshTokenRepository,
 ) {
 
     // ── identify ──────────────────────────────────────────────────────────────
@@ -204,6 +208,78 @@ class AuthService(
         emailService.sendOtp(normalised, resendResult.otp)
 
         return ResendOtpResponse(nextResendAllowedAt = resendResult.nextResendAllowedAt)
+    }
+
+    // ── refresh ───────────────────────────────────────────────────────────────
+
+    /**
+     * Validates the supplied refresh token, rotates it, and returns a new token pair.
+     * Old token is revoked atomically — single-use enforced.
+     *
+     * Error order (per E2-US3 spec):
+     *  1. Token not found → REFRESH_TOKEN_INVALID 401
+     *  2. revoked_at set  → REFRESH_TOKEN_INVALID 401
+     *  3. expires_at past → REFRESH_TOKEN_EXPIRED 401
+     */
+    fun refresh(refreshToken: String): TokenPairDto {
+        val tokenHash   = jwtService.hashToken(refreshToken)
+        val tokenEntity = refreshTokenRepository.findByTokenHash(tokenHash)
+            ?: throw PlatformException(
+                "REFRESH_TOKEN_INVALID",
+                "Invalid session. Please log in again.",
+                HttpStatus.UNAUTHORIZED,
+            )
+
+        if (tokenEntity.revokedAt != null) {
+            throw PlatformException(
+                "REFRESH_TOKEN_INVALID",
+                "Invalid session. Please log in again.",
+                HttpStatus.UNAUTHORIZED,
+            )
+        }
+
+        if (tokenEntity.expiresAt.isBefore(Instant.now())) {
+            throw PlatformException(
+                "REFRESH_TOKEN_EXPIRED",
+                "Your session has expired. Please log in again.",
+                HttpStatus.UNAUTHORIZED,
+            )
+        }
+
+        // Revoke the old token before issuing a new one (rotation).
+        tokenEntity.revokedAt = Instant.now()
+        refreshTokenRepository.save(tokenEntity)
+
+        // Load the owning user.
+        val user = userRepository.findById(tokenEntity.userId).orElseThrow {
+            PlatformException(
+                "REFRESH_TOKEN_INVALID",
+                "Invalid session. Please log in again.",
+                HttpStatus.UNAUTHORIZED,
+            )
+        }
+
+        // generateTokenPair() creates + persists the new refresh token hash.
+        return jwtService.generateTokenPair(user)
+    }
+
+    // ── logout ────────────────────────────────────────────────────────────────
+
+    /**
+     * Revokes the supplied refresh token.
+     * Idempotent — returns success silently when token is not found or already revoked.
+     * Only this token is revoked; other sessions for the same user are unaffected.
+     */
+    fun logout(refreshToken: String): LogoutResponse {
+        val tokenHash   = jwtService.hashToken(refreshToken)
+        val tokenEntity = refreshTokenRepository.findByTokenHash(tokenHash)
+
+        if (tokenEntity != null && tokenEntity.revokedAt == null) {
+            tokenEntity.revokedAt = Instant.now()
+            refreshTokenRepository.save(tokenEntity)
+        }
+
+        return LogoutResponse(message = "Logged out successfully")
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────

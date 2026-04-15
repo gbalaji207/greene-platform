@@ -3,8 +3,10 @@ package com.greene.core.auth.web
 import com.greene.core.api.response.ApiResponse
 import com.greene.core.auth.dto.AuthTokenResponse
 import com.greene.core.auth.dto.IdentifyResponse
+import com.greene.core.auth.dto.LogoutResponse
 import com.greene.core.auth.dto.RegisterResponse
 import com.greene.core.auth.dto.ResendOtpResponse
+import com.greene.core.auth.dto.TokenPairDto
 import com.greene.core.auth.service.AuthService
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
@@ -77,5 +79,30 @@ class AuthController(private val authService: AuthService) {
         @Valid @RequestBody request: ResendOtpRequest,
     ): ResponseEntity<ApiResponse<ResendOtpResponse>> =
         ResponseEntity.ok(ApiResponse.of(authService.resendOtp(request.email!!)))
+
+    /**
+     * POST /api/v1/auth/refresh
+     *
+     * Validates the supplied refresh token, rotates it, and returns a new token pair.
+     * Old refresh token is revoked on success — single use enforced.
+     * Public endpoint — no JWT required.
+     */
+    @PostMapping("/refresh")
+    fun refresh(
+        @Valid @RequestBody request: RefreshTokenRequest,
+    ): ResponseEntity<ApiResponse<TokenPairDto>> =
+        ResponseEntity.ok(ApiResponse.of(authService.refresh(request.refreshToken!!)))
+
+    /**
+     * POST /api/v1/auth/logout
+     *
+     * Revokes the supplied refresh token. Idempotent — always returns 200.
+     * Public endpoint — no JWT required.
+     */
+    @PostMapping("/logout")
+    fun logout(
+        @Valid @RequestBody request: LogoutRequest,
+    ): ResponseEntity<ApiResponse<LogoutResponse>> =
+        ResponseEntity.ok(ApiResponse.of(authService.logout(request.refreshToken!!)))
 }
 
