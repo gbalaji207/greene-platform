@@ -20,6 +20,7 @@ flyway = "11.8.2"
 
 # Testing
 mockk = "1.14.7"
+springmockk = "4.0.2"
 testcontainers = "1.21.0"
 
 [libraries]
@@ -56,6 +57,7 @@ flyway-postgresql = { module = "org.flywaydb:flyway-database-postgresql", versio
 
 # Testing
 mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
+springmockk = { module = "com.ninja-squad:springmockk", version.ref = "springmockk" }
 testcontainers-postgresql = { module = "org.testcontainers:postgresql", version.ref = "testcontainers" }
 testcontainers-junit = { module = "org.testcontainers:junit-jupiter", version.ref = "testcontainers" }
 junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }

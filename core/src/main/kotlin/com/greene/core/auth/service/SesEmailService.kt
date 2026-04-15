@@ -49,6 +49,15 @@ class SesEmailService(
         )
     }
 
+    override fun sendStaffWelcome(to: String, name: String) {
+        log.debug("Sending staff welcome email to {}", to)
+        send(
+            to      = to,
+            subject = "Welcome to greene \u2014 Your staff account is ready",
+            html    = staffWelcomeEmailHtml(name, to),
+        )
+    }
+
     // ── Private helpers ───────────────────────────────────────────────────────
 
     private fun send(to: String, subject: String, html: String) {
@@ -152,6 +161,51 @@ class SesEmailService(
                   <td style="padding-top:24px;border-top:1px solid #eeeeee;">
                     <p style="margin:0;font-size:12px;color:#999;">
                       The Greene Platform Team
+                    </p>
+                  </td>
+                </tr>
+              </table>
+            </td></tr>
+          </table>
+        </body>
+        </html>
+    """.trimIndent()
+
+    private fun staffWelcomeEmailHtml(name: String, email: String): String = """
+        <!DOCTYPE html>
+        <html lang="en">
+        <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head>
+        <body style="margin:0;padding:0;background:#f5f5f5;font-family:Arial,Helvetica,sans-serif;">
+          <table width="100%" cellpadding="0" cellspacing="0" style="padding:40px 0;">
+            <tr><td align="center">
+              <table width="560" cellpadding="0" cellspacing="0"
+                     style="background:#ffffff;border-radius:8px;padding:40px;box-shadow:0 2px 8px rgba(0,0,0,.08);">
+                <tr>
+                  <td style="padding-bottom:24px;border-bottom:2px solid #e8f5e9;">
+                    <h1 style="margin:0;font-size:22px;color:#2d7a2d;">Greene Platform</h1>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding:28px 0 16px;">
+                    <p style="margin:0 0 12px;font-size:16px;color:#333;">Hi $name,</p>
+                    <p style="margin:0 0 12px;font-size:16px;color:#333;">
+                      Your greene staff account has been created.
+                    </p>
+                    <p style="margin:0 0 20px;font-size:16px;color:#333;">
+                      <strong>Email:</strong> $email
+                    </p>
+                    <p style="margin:0 0 12px;font-size:16px;color:#333;">
+                      To log in, visit the greene app and enter your email address.
+                    </p>
+                    <p style="margin:0;font-size:16px;color:#333;">
+                      You will receive a one-time code to verify your identity.
+                    </p>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding-top:24px;border-top:1px solid #eeeeee;">
+                    <p style="margin:0;font-size:12px;color:#999;">
+                      The greene team
                     </p>
                   </td>
                 </tr>

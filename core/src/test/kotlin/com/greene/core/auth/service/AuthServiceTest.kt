@@ -70,6 +70,32 @@ class AuthServiceTest {
         verify(exactly = 0) { otpService.generateAndPersist(any(), any()) }
     }
 
+    @Test
+    fun `identify throws ACCOUNT_SUSPENDED for SUSPENDED user`() {
+        every { userRepository.findByEmail(normalised) } returns suspendedUser()
+
+        val ex = assertThrows<PlatformException> {
+            service.identify(email)
+        }
+
+        assertEquals("ACCOUNT_SUSPENDED", ex.code)
+        assertEquals(HttpStatus.FORBIDDEN, ex.httpStatus)
+        assertEquals(
+            "Your account has been suspended. Please contact your administrator.",
+            ex.message,
+        )
+    }
+
+    @Test
+    fun `identify does not generate OTP and does not send email when account is SUSPENDED`() {
+        every { userRepository.findByEmail(normalised) } returns suspendedUser()
+
+        assertThrows<PlatformException> { service.identify(email) }
+
+        verify(exactly = 0) { otpService.generateAndPersist(any(), any()) }
+        verify(exactly = 0) { emailService.sendOtp(any(), any()) }
+    }
+
     // ── register ──────────────────────────────────────────────────────────────
 
     @Test

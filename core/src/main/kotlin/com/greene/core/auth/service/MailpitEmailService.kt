@@ -45,5 +45,27 @@ class MailpitEmailService(
         }
         mailSender.send(message)
     }
+
+    override fun sendStaffWelcome(to: String, name: String) {
+        log.debug("[Mailpit] Sending staff welcome email to {}", to)
+        val message = SimpleMailMessage().apply {
+            setTo(to)
+            setFrom("noreply@greene.local")
+            subject = "Welcome to greene \u2014 Your staff account is ready"
+            text = """
+                Hi $name,
+
+                Your greene staff account has been created.
+
+                Email: $to
+
+                To log in, visit the greene app and enter your email address.
+                You will receive a one-time code to verify your identity.
+
+                The greene team
+            """.trimIndent()
+        }
+        mailSender.send(message)
+    }
 }
 

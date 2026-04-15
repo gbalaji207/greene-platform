@@ -41,23 +41,31 @@ class AuthService(
     /**
      * Looks up the email and returns which flow the client should present.
      *
-     *  - ACTIVE user  → generate LOGIN OTP, send via SES, apply rate limit → flow = LOGIN
-     *  - Anything else → no OTP sent → flow = REGISTER
+     *  - SUSPENDED user → 403 ACCOUNT_SUSPENDED (E2-US2)
+     *  - ACTIVE user    → generate LOGIN OTP, send via SES, apply rate limit → flow = LOGIN
+     *  - Anything else  → no OTP sent → flow = REGISTER
      *
-     * Privacy: the response never confirms whether the email exists in the system.
+     * Privacy: the REGISTER branch never confirms whether the email exists.
+     * SUSPENDED surfaces an explicit 403 so the admin-contact message can be shown.
      */
     fun identify(email: String): IdentifyResponse {
         val normalised = email.lowercase()
         val user = userRepository.findByEmail(normalised)
 
-        return if (user?.status == UserStatus.ACTIVE) {
-            // Rate-limit check BEFORE persisting the OTP.
-            rateLimitService.checkAndIncrement(normalised)
-            val otp = otpService.generateAndPersist(user.id!!, OtpPurpose.LOGIN)
-            emailService.sendOtp(normalised, otp)
-            IdentifyResponse(flow = "LOGIN")
-        } else {
-            IdentifyResponse(flow = "REGISTER")
+        return when (user?.status) {
+            UserStatus.SUSPENDED -> throw PlatformException(
+                "ACCOUNT_SUSPENDED",
+                "Your account has been suspended. Please contact your administrator.",
+                HttpStatus.FORBIDDEN,
+            )
+            UserStatus.ACTIVE -> {
+                // Rate-limit check BEFORE persisting the OTP.
+                rateLimitService.checkAndIncrement(normalised)
+                val otp = otpService.generateAndPersist(user.id!!, OtpPurpose.LOGIN)
+                emailService.sendOtp(normalised, otp)
+                IdentifyResponse(flow = "LOGIN")
+            }
+            else -> IdentifyResponse(flow = "REGISTER")
         }
     }
 
