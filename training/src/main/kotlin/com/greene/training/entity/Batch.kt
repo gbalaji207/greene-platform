@@ -5,7 +5,6 @@ import com.greene.training.domain.TrainingStatus
 import jakarta.persistence.*
 import org.hibernate.annotations.CreationTimestamp
 import org.hibernate.annotations.UpdateTimestamp
-import java.time.LocalDate
 import java.time.OffsetDateTime
 import java.util.UUID
 
@@ -34,11 +33,11 @@ class Batch(
     @Column(length = 2000)
     var description: String? = null,
 
-    @Column(name = "start_date", nullable = false)
-    var startDate: LocalDate,
+    @Column(name = "start_date_time", nullable = false)
+    var startDateTime: OffsetDateTime,
 
-    @Column(name = "end_date")
-    var endDate: LocalDate? = null,
+    @Column(name = "end_date_time")
+    var endDateTime: OffsetDateTime? = null,
 
     @Column(length = 500)
     var location: String? = null,

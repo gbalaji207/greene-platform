@@ -16,8 +16,8 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.http.HttpStatus
-import java.time.LocalDate
 import java.time.OffsetDateTime
+import java.time.ZoneOffset
 import java.util.Optional
 import java.util.UUID
 
@@ -32,22 +32,22 @@ class BatchServiceTest {
 
     // ── Fixtures ──────────────────────────────────────────────────────────────
 
-    private val callerId = UUID.fromString("f7e6d5c4-b3a2-1098-fedc-ba9876543210")
-    private val batchId  = UUID.fromString("a1b2c3d4-e5f6-7890-abcd-ef1234567890")
-    private val startDate = LocalDate.of(2026, 5, 1)
-    private val endDate   = LocalDate.of(2026, 5, 15)
-    private val now       = OffsetDateTime.now()
+    private val callerId      = UUID.fromString("f7e6d5c4-b3a2-1098-fedc-ba9876543210")
+    private val batchId       = UUID.fromString("a1b2c3d4-e5f6-7890-abcd-ef1234567890")
+    private val startDateTime = OffsetDateTime.of(2026, 5, 1, 9, 0, 0, 0, ZoneOffset.UTC)
+    private val endDateTime   = OffsetDateTime.of(2026, 5, 15, 9, 0, 0, 0, ZoneOffset.UTC)
+    private val now           = OffsetDateTime.now()
 
     private fun buildBatch(
         status: BatchStatus = BatchStatus.DRAFT,
-        start: LocalDate = startDate,
-        end: LocalDate? = null,
+        start: OffsetDateTime = startDateTime,
+        end: OffsetDateTime? = null,
     ) = Batch(
         id             = batchId,
         name           = "Batch April 2026",
         description    = null,
-        startDate      = start,
-        endDate        = end,
+        startDateTime  = start,
+        endDateTime    = end,
         location       = null,
         topics         = null,
         maxSeats       = null,
@@ -59,18 +59,18 @@ class BatchServiceTest {
     )
 
     private fun request(
-        name: String?       = "Batch April 2026",
-        start: LocalDate?   = startDate,
-        end: LocalDate?     = null,
-        status: BatchStatus? = null,
+        name: String?            = "Batch April 2026",
+        start: OffsetDateTime?   = startDateTime,
+        end: OffsetDateTime?     = null,
+        status: BatchStatus?     = null,
     ) = CreateBatchRequest(
-        name      = name,
-        startDate = start,
-        endDate   = end,
-        status    = status,
+        name          = name,
+        startDateTime = start,
+        endDateTime   = end,
+        status        = status,
     )
 
-    // ── createBatch — happy paths ─────────────────────────────────────────────
+    // ── createBatch – happy paths ─────────────────────────────────────────────
 
     @Test
     fun `createBatch - explicit OPEN status - saves entity and returns BatchResponse with OPEN`() {
@@ -103,11 +103,10 @@ class BatchServiceTest {
         val result = batchService.createBatch(request(status = null), callerId)
 
         assertEquals(BatchStatus.DRAFT, result.status)
-        // Entity passed to save must have DRAFT
         verify { batchRepository.save(match { it.status == BatchStatus.DRAFT }) }
     }
 
-    // ── createBatch — INVALID_BATCH_STATUS ───────────────────────────────────
+    // ── createBatch – INVALID_BATCH_STATUS ───────────────────────────────────
 
     @Test
     fun `createBatch - status CLOSED - throws INVALID_BATCH_STATUS 400`() {
@@ -130,32 +129,45 @@ class BatchServiceTest {
         assertEquals(HttpStatus.BAD_REQUEST,  ex.httpStatus)
     }
 
-    // ── createBatch — date cross-field validation ─────────────────────────────
+    // ── createBatch – date-time cross-field validation ────────────────────────
 
     @Test
-    fun `createBatch - endDate before startDate - throws VALIDATION_ERROR 400 with field detail`() {
-        val req = request(start = startDate, end = startDate.minusDays(1))
+    fun `createBatch - endDateTime before startDateTime - throws VALIDATION_ERROR 400 with field detail`() {
+        val req = request(start = startDateTime, end = startDateTime.minusDays(1))
 
         val ex = assertThrows<PlatformException> {
             batchService.createBatch(req, callerId)
         }
 
-        assertEquals("VALIDATION_ERROR",                           ex.code)
-        assertEquals(HttpStatus.BAD_REQUEST,                       ex.httpStatus)
-        assertEquals("Request validation failed",                  ex.message)
-        assertEquals(1,                                            ex.details.size)
-        assertEquals("endDate",                                    ex.details[0].field)
-        assertEquals("end date must be on or after start date",    ex.details[0].message)
+        assertEquals("VALIDATION_ERROR",                              ex.code)
+        assertEquals(HttpStatus.BAD_REQUEST,                          ex.httpStatus)
+        assertEquals("Request validation failed",                     ex.message)
+        assertEquals(1,                                               ex.details.size)
+        assertEquals("endDateTime",                                   ex.details[0].field)
+        assertEquals("end date time must be after start date time",   ex.details[0].message)
     }
 
     @Test
-    fun `createBatch - endDate same as startDate - succeeds (single-day batch)`() {
-        every { batchRepository.save(any()) } returns buildBatch(start = startDate, end = startDate)
+    fun `createBatch - endDateTime equal to startDateTime - throws VALIDATION_ERROR 400`() {
+        val req = request(start = startDateTime, end = startDateTime)
 
-        val result = batchService.createBatch(request(start = startDate, end = startDate), callerId)
+        val ex = assertThrows<PlatformException> {
+            batchService.createBatch(req, callerId)
+        }
 
-        assertEquals(startDate, result.startDate)
-        assertEquals(startDate, result.endDate)
+        assertEquals("VALIDATION_ERROR",  ex.code)
+        assertEquals(HttpStatus.BAD_REQUEST, ex.httpStatus)
+        assertEquals("endDateTime",          ex.details[0].field)
+    }
+
+    @Test
+    fun `createBatch - endDateTime after startDateTime - succeeds`() {
+        every { batchRepository.save(any()) } returns buildBatch(start = startDateTime, end = endDateTime)
+
+        val result = batchService.createBatch(request(start = startDateTime, end = endDateTime), callerId)
+
+        assertEquals(startDateTime, result.startDateTime)
+        assertEquals(endDateTime,   result.endDateTime)
     }
 
     // ── getBatch ──────────────────────────────────────────────────────────────
@@ -181,9 +193,9 @@ class BatchServiceTest {
             batchService.getBatch(batchId)
         }
 
-        assertEquals("BATCH_NOT_FOUND",   ex.code)
+        assertEquals("BATCH_NOT_FOUND",    ex.code)
         assertEquals(HttpStatus.NOT_FOUND, ex.httpStatus)
-        assertEquals("Batch not found",   ex.message)
+        assertEquals("Batch not found",    ex.message)
     }
 }
 

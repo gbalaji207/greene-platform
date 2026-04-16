@@ -24,7 +24,6 @@ import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequ
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.get
 import org.springframework.test.web.servlet.post
-import java.time.LocalDate
 import java.time.OffsetDateTime
 import java.util.UUID
 
@@ -65,7 +64,6 @@ class BatchControllerTest {
 
     private val callerId  = UUID.fromString("f7e6d5c4-b3a2-1098-fedc-ba9876543210")
     private val batchId   = UUID.fromString("a1b2c3d4-e5f6-7890-abcd-ef1234567890")
-    private val startDate = LocalDate.of(2026, 5, 1)
 
     /**
      * Authentication token with a String principal — required for POST tests that reach
@@ -81,8 +79,8 @@ class BatchControllerTest {
         id             = batchId,
         name           = "Batch April 2026",
         description    = null,
-        startDate      = startDate,
-        endDate        = null,
+        startDateTime  = OffsetDateTime.parse("2026-05-01T09:00:00+00:00"),
+        endDateTime    = null,
         location       = null,
         topics         = null,
         maxSeats       = null,
@@ -96,7 +94,7 @@ class BatchControllerTest {
     private val validPostBody = """
         {
           "name": "Batch April 2026",
-          "startDate": "2026-05-01",
+          "startDateTime": "2026-05-01T09:00:00+00:00",
           "status": "OPEN"
         }
     """.trimIndent()
@@ -133,7 +131,7 @@ class BatchControllerTest {
     fun `POST createBatch - 400 when name is blank`() {
         mockMvc.post("/api/v1/batches") {
             contentType = MediaType.APPLICATION_JSON
-            content     = """{"name": "", "startDate": "2026-05-01"}"""
+            content     = """{"name": "", "startDateTime": "2026-05-01T09:00:00+00:00"}"""
         }.andExpect {
             status { isBadRequest() }
             jsonPath("$.error.code")              { value("VALIDATION_ERROR") }
@@ -143,14 +141,14 @@ class BatchControllerTest {
 
     @Test
     @WithMockUser(roles = ["ADMIN"])
-    fun `POST createBatch - 400 when startDate is missing`() {
+    fun `POST createBatch - 400 when startDateTime is missing`() {
         mockMvc.post("/api/v1/batches") {
             contentType = MediaType.APPLICATION_JSON
             content     = """{"name": "Batch April 2026"}"""
         }.andExpect {
             status { isBadRequest() }
             jsonPath("$.error.code")              { value("VALIDATION_ERROR") }
-            jsonPath("$.error.details[0].field")  { value("startDate") }
+            jsonPath("$.error.details[0].field")  { value("startDateTime") }
         }
     }
 
@@ -171,7 +169,7 @@ class BatchControllerTest {
         mockMvc.post("/api/v1/batches") {
             with(authentication(adminAuth()))
             contentType = MediaType.APPLICATION_JSON
-            content     = """{"name": "Batch April 2026", "startDate": "2026-05-01", "status": "CLOSED"}"""
+            content     = """{"name": "Batch April 2026", "startDateTime": "2026-05-01T09:00:00+00:00", "status": "CLOSED"}"""
         }.andExpect {
             status { isBadRequest() }
             jsonPath("$.error.code")    { value("INVALID_BATCH_STATUS") }

@@ -2,7 +2,6 @@ package com.greene.training.dto
 
 import com.greene.training.domain.BatchStatus
 import com.greene.training.domain.TrainingStatus
-import java.time.LocalDate
 import java.time.OffsetDateTime
 import java.util.UUID
 
@@ -15,8 +14,8 @@ data class BatchResponse(
     val id: UUID,
     val name: String,
     val description: String?,
-    val startDate: LocalDate,
-    val endDate: LocalDate?,
+    val startDateTime: OffsetDateTime,
+    val endDateTime: OffsetDateTime?,
     val location: String?,
     val topics: String?,
     val maxSeats: Int?,

@@ -84,6 +84,14 @@ class GlobalExceptionHandler {
     @ExceptionHandler(HttpMessageNotReadableException::class)
     fun handleUnreadableMessage(ex: HttpMessageNotReadableException): ResponseEntity<ApiError> {
         log.debug("Unreadable request body: {}", ex.message)
+        val cause = ex.cause
+        if (cause is com.fasterxml.jackson.databind.exc.InvalidFormatException && cause.targetType.isEnum) {
+            val fieldName = cause.path.firstOrNull()?.fieldName ?: "unknown"
+            val validValues = cause.targetType.enumConstants.joinToString(", ") { it.toString() }
+            val detail = ErrorDetail(field = fieldName, message = "must be one of: $validValues")
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ApiError.validation(message = "Request validation failed", details = listOf(detail)))
+        }
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
             .body(ApiError.of(code = "VALIDATION_ERROR", message = "Validation failed"))
     }

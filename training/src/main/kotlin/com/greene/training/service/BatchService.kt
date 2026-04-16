@@ -49,16 +49,16 @@ class BatchService(
             )
         }
 
-        // Step 3 — cross-field date check (SC-04); same date is valid (SC-05)
-        if (request.endDate != null && request.startDate != null &&
-            request.endDate.isBefore(request.startDate)
+        // Step 3 — cross-field date-time check; endDateTime must be after startDateTime
+        if (request.endDateTime != null && request.startDateTime != null &&
+            !request.endDateTime.isAfter(request.startDateTime)
         ) {
             throw PlatformException(
                 code = "VALIDATION_ERROR",
                 message = "Request validation failed",
                 httpStatus = HttpStatus.BAD_REQUEST,
                 details = listOf(
-                    ErrorDetail(field = "endDate", message = "end date must be on or after start date")
+                    ErrorDetail(field = "endDateTime", message = "end date time must be after start date time")
                 ),
             )
         }
@@ -67,8 +67,8 @@ class BatchService(
         val batch = Batch(
             name = request.name!!,
             description = request.description,
-            startDate = request.startDate!!,
-            endDate = request.endDate,
+            startDateTime = request.startDateTime!!,
+            endDateTime = request.endDateTime,
             location = request.location,
             topics = request.topics,
             maxSeats = request.maxSeats,
@@ -102,8 +102,8 @@ private fun Batch.toResponse() = BatchResponse(
     id = id!!,
     name = name,
     description = description,
-    startDate = startDate,
-    endDate = endDate,
+    startDateTime = startDateTime,
+    endDateTime = endDateTime,
     location = location,
     topics = topics,
     maxSeats = maxSeats,

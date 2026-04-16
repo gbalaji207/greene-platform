@@ -6,7 +6,7 @@ import jakarta.validation.constraints.Min
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.NotNull
 import jakarta.validation.constraints.Size
-import java.time.LocalDate
+import java.time.OffsetDateTime
 
 /**
  * Request body for POST /api/v1/batches.
@@ -28,10 +28,10 @@ data class CreateBatchRequest(
 
     @field:NotNull
     @field:FutureOrPresent(message = "must be today or a future date")
-    val startDate: LocalDate? = null,
+    val startDateTime: OffsetDateTime? = null,
 
-    // Cross-field: endDate >= startDate validated in BatchService
-    val endDate: LocalDate? = null,
+    // Cross-field: endDateTime > startDateTime validated in BatchService
+    val endDateTime: OffsetDateTime? = null,
 
     @field:Size(max = 500)
     val location: String? = null,
