@@ -44,6 +44,7 @@ class SecurityConfig(
                         "/api/v1/auth/refresh",
                         "/api/v1/auth/logout",
                     ).permitAll()
+                    .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/batches").permitAll()
                     .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/api-docs/**", "/v3/api-docs/**").permitAll()
                     .anyRequest().authenticated()
             }

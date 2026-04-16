@@ -1,6 +1,8 @@
 package com.greene.training.controller
 
 import com.greene.core.api.response.ApiResponse
+import com.greene.core.exception.PlatformException
+import com.greene.training.domain.BatchStatus
 import com.greene.training.dto.BatchResponse
 import com.greene.training.dto.CreateBatchRequest
 import com.greene.training.service.BatchService
@@ -8,27 +10,70 @@ import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.security.access.prepost.PreAuthorize
+import org.springframework.security.core.Authentication
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 import java.util.UUID
 
 /**
  * REST controller for batch management.
  *
- * All endpoints require ADMIN, STAFF, or SUPER_ADMIN role.
- * CLIENT callers are rejected with 403 FORBIDDEN via @PreAuthorize.
- * Unauthenticated requests receive 401 UNAUTHORIZED from [com.greene.core.auth.security.JwtAuthenticationEntryPoint].
+ * [GET /api/v1/batches] is public — access logic is handled in the service layer.
+ * All other write/admin endpoints require ADMIN, STAFF, or SUPER_ADMIN via @PreAuthorize.
  *
  * Error mapping is handled centrally by [com.greene.core.web.GlobalExceptionHandler].
  */
 @RestController
 @RequestMapping("/api/v1/batches")
 class BatchController(private val batchService: BatchService) {
+
+    /**
+     * GET /api/v1/batches
+     *
+     * Public endpoint — no JWT required.
+     * - Unauthenticated / CLIENT callers: returns OPEN batches only, trimmed projection.
+     * - ADMIN / STAFF / SUPER_ADMIN callers: returns all statuses, optional ?status= filter.
+     *
+     * Validates:
+     *  - [page] ≥ 1, else 400 VALIDATION_ERROR
+     *  - [pageSize] ≤ 50, else 400 VALIDATION_ERROR
+     */
+    @GetMapping
+    fun listBatches(
+        @RequestParam(defaultValue = "1") page: Int,
+        @RequestParam(defaultValue = "20") pageSize: Int,
+        @RequestParam(required = false) status: BatchStatus?,
+    ): ResponseEntity<ApiResponse<*>> {
+        if (page < 1) {
+            throw PlatformException(
+                code = "VALIDATION_ERROR",
+                message = "Request validation failed",
+                httpStatus = HttpStatus.BAD_REQUEST,
+                details = listOf(com.greene.core.api.error.ErrorDetail(field = "page", message = "page must be at least 1")),
+            )
+        }
+        if (pageSize > 50) {
+            throw PlatformException(
+                code = "VALIDATION_ERROR",
+                message = "Request validation failed",
+                httpStatus = HttpStatus.BAD_REQUEST,
+                details = listOf(com.greene.core.api.error.ErrorDetail(field = "pageSize", message = "pageSize must not exceed 50")),
+            )
+        }
+
+        val auth: Authentication? = SecurityContextHolder.getContext().authentication
+        val isPrivileged = auth != null && auth.authorities.any { authority ->
+            authority.authority in setOf("ROLE_ADMIN", "ROLE_STAFF", "ROLE_SUPER_ADMIN")
+        }
+
+        return ResponseEntity.ok(ApiResponse.of(batchService.listBatches(page, pageSize, status, isPrivileged)))
+    }
 
     /**
      * POST /api/v1/batches
