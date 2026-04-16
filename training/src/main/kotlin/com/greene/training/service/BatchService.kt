@@ -1,12 +1,15 @@
 package com.greene.training.service
 
 import com.greene.core.api.error.ErrorDetail
+import com.greene.core.api.response.PagedData
 import com.greene.core.exception.PlatformException
 import com.greene.training.domain.BatchStatus
+import com.greene.training.dto.BatchListItemResponse
 import com.greene.training.dto.BatchResponse
 import com.greene.training.dto.CreateBatchRequest
 import com.greene.training.entity.Batch
 import com.greene.training.repository.BatchRepository
+import org.springframework.data.domain.PageRequest
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -94,6 +97,49 @@ class BatchService(
                 )
             }
             .toResponse()
+
+    /**
+     * Returns a paginated list of batches.
+     *
+     * - Public / CLIENT callers always see only OPEN batches (trimmed projection).
+     * - Staff / Admin callers see all statuses; an optional [statusFilter] narrows results.
+     *
+     * [page] is 1-based; validated upstream. [pageSize] max is 50; validated upstream.
+     * [isPrivileged] is true when the caller holds ADMIN, STAFF, or SUPER_ADMIN.
+     */
+    @Transactional(readOnly = true)
+    fun listBatches(
+        page: Int,
+        pageSize: Int,
+        statusFilter: BatchStatus?,
+        isPrivileged: Boolean,
+    ): PagedData<*> {
+        val pageable = PageRequest.of(page - 1, pageSize)
+
+        return if (!isPrivileged) {
+            // Public / CLIENT — always OPEN only, trimmed projection
+            val result = batchRepository.findAllByStatus(BatchStatus.OPEN, pageable)
+            PagedData(
+                items = result.content.map { it.toListItemResponse() },
+                page = page,
+                pageSize = pageSize,
+                total = result.totalElements,
+            )
+        } else {
+            // Admin / Staff — all statuses, optional filter, full projection
+            val result = if (statusFilter != null) {
+                batchRepository.findAllByStatusIn(listOf(statusFilter), pageable)
+            } else {
+                batchRepository.findAll(pageable)
+            }
+            PagedData(
+                items = result.content.map { it.toResponse() },
+                page = page,
+                pageSize = pageSize,
+                total = result.totalElements,
+            )
+        }
+    }
 }
 
 // ── Mapping ───────────────────────────────────────────────────────────────────
@@ -112,5 +158,16 @@ private fun Batch.toResponse() = BatchResponse(
     createdBy = createdBy,
     createdAt = createdAt,
     updatedAt = updatedAt,
+)
+
+private fun Batch.toListItemResponse() = BatchListItemResponse(
+    id = id!!,
+    name = name,
+    description = description,
+    startDateTime = startDateTime,
+    endDateTime = endDateTime,
+    location = location,
+    topics = topics,
+    maxSeats = maxSeats,
 )
 
