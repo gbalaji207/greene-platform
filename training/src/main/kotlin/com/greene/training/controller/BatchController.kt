@@ -5,6 +5,8 @@ import com.greene.core.exception.PlatformException
 import com.greene.training.domain.BatchStatus
 import com.greene.training.dto.BatchResponse
 import com.greene.training.dto.CreateBatchRequest
+import com.greene.training.dto.UpdateBatchDetailsRequest
+import com.greene.training.dto.UpdateBatchStatusRequest
 import com.greene.training.service.BatchService
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
@@ -12,13 +14,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.security.core.Authentication
 import org.springframework.security.core.context.SecurityContextHolder
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PathVariable
-import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RequestParam
-import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.bind.annotation.*
 import java.util.UUID
 
 /**
@@ -111,5 +107,39 @@ class BatchController(private val batchService: BatchService) {
         @PathVariable id: UUID,
     ): ResponseEntity<ApiResponse<BatchResponse>> =
         ResponseEntity.ok(ApiResponse.of(batchService.getBatch(id)))
-}
 
+    /**
+     * PATCH /api/v1/batches/{id}/details
+     *
+     * Partially updates editable fields of an existing batch.
+     * Batch must not be CLOSED; at least one field must be provided.
+     * Returns 200 with the updated batch on success.
+     */
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF', 'SUPER_ADMIN')")
+    @PatchMapping("/{id}/details")
+    fun updateBatchDetails(
+        @PathVariable id: UUID,
+        @Valid @RequestBody request: UpdateBatchDetailsRequest,
+    ): ResponseEntity<ApiResponse<BatchResponse>> =
+        ResponseEntity.ok(ApiResponse.of(batchService.updateBatchDetails(id, request)))
+
+    /**
+     * PATCH /api/v1/batches/{id}/status
+     *
+     * Transitions a batch to a new status (OPEN or CLOSED).
+     * DRAFT is not a valid target; invalid transitions return 422.
+     * On OPEN → CLOSED, all PENDING bookings are auto-rejected.
+     * Returns 200 with the updated batch on success.
+     */
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF', 'SUPER_ADMIN')")
+    @PatchMapping("/{id}/status")
+    fun updateBatchStatus(
+        @PathVariable id: UUID,
+        @Valid @RequestBody request: UpdateBatchStatusRequest,
+    ): ResponseEntity<ApiResponse<BatchResponse>> {
+        val callerId = UUID.fromString(
+            SecurityContextHolder.getContext().authentication.principal as String,
+        )
+        return ResponseEntity.ok(ApiResponse.of(batchService.updateBatchStatus(id, request, callerId)))
+    }
+}

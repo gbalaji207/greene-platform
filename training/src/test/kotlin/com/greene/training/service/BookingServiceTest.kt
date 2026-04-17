@@ -161,20 +161,6 @@ class BookingServiceTest {
         verify(exactly = 0) { bookingRepository.existsByClientIdAndBatchId(any(), any()) }
     }
 
-    // ── B9: Batch is COMPLETED ────────────────────────────────────────────────
-
-    @Test
-    fun `createBooking - batch is COMPLETED - throws BATCH_NOT_BOOKABLE 422`() {
-        every { userRepository.findById(clientId) } returns Optional.of(activeClient())
-        every { batchRepository.findById(batchId) } returns Optional.of(buildBatch(BatchStatus.COMPLETED))
-
-        val ex = assertThrows<PlatformException> {
-            bookingService.createBooking(batchId, clientId)
-        }
-
-        assertEquals("BATCH_NOT_BOOKABLE",            ex.code)
-        assertEquals(HttpStatus.UNPROCESSABLE_ENTITY, ex.httpStatus)
-    }
 
     // ── B10 / B11: Duplicate booking (any status) ─────────────────────────────
 
