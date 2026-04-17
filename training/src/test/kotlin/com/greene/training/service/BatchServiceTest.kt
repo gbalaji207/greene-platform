@@ -412,17 +412,11 @@ class BatchServiceTest {
         every { batchRepository.findById(batchId) } returns Optional.of(buildBatch(BatchStatus.CLOSED))
 
         val ex = assertThrows<PlatformException> {
-            batchService.updateBatchStatus(batchId, UpdateBatchStatusRequest(BatchStatus.OPEN), callerId)
-        }
-
-        // CLOSED → OPEN is valid; verify the actual same-status case
-        every { batchRepository.findById(batchId) } returns Optional.of(buildBatch(BatchStatus.CLOSED))
-        val ex2 = assertThrows<PlatformException> {
             batchService.updateBatchStatus(batchId, UpdateBatchStatusRequest(BatchStatus.CLOSED), callerId)
         }
 
-        assertEquals("INVALID_BATCH_STATUS_TRANSITION", ex2.code)
-        assertEquals(HttpStatus.UNPROCESSABLE_ENTITY,   ex2.httpStatus)
+        assertEquals("INVALID_BATCH_STATUS_TRANSITION", ex.code)
+        assertEquals(HttpStatus.UNPROCESSABLE_ENTITY,   ex.httpStatus)
     }
 
     // S10
