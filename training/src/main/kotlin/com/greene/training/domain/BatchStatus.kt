@@ -4,7 +4,8 @@ package com.greene.training.domain
  * Lifecycle status of a [com.greene.training.entity.Batch].
  *
  * Valid creation values: DRAFT, OPEN.
- * CLOSED and COMPLETED may only be reached via status transitions (E3-US4, E3-US5).
+ * CLOSED may only be reached via status transition (E3-US4).
+ * Training completion is tracked via `training_complete` / `training_completed_at` on bookings.
  */
 enum class BatchStatus {
     /** Created but not visible to clients. Editable. */
@@ -15,8 +16,5 @@ enum class BatchStatus {
 
     /** No longer visible to clients. No new bookings. Read-only. */
     CLOSED,
-
-    /** Training concluded. Premium content unlocked for enrolled clients. Read-only. */
-    COMPLETED,
 }
 

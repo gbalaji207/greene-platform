@@ -27,7 +27,7 @@ import java.util.UUID
  * Business rules enforced here (in order):
  *  1. Caller's account must be ACTIVE — PENDING_VERIFICATION → 403 ACCOUNT_NOT_VERIFIED.
  *  2. Batch must exist and must not be DRAFT (invisible to clients) → 404 BATCH_NOT_FOUND.
- *  3. Batch must not be CLOSED or COMPLETED → 422 BATCH_NOT_BOOKABLE.
+ *  3. Batch must not be CLOSED → 422 BATCH_NOT_BOOKABLE.
  *  4. Client must not already have a booking for this batch (any status) → 409 BOOKING_ALREADY_EXISTS.
  *  5. Persist booking with status PENDING.
  */
@@ -78,8 +78,8 @@ class BookingService(
             )
         }
 
-        // Rule 3 — batch must be OPEN (CLOSED / COMPLETED no longer accept bookings)
-        if (batch.status == BatchStatus.CLOSED || batch.status == BatchStatus.COMPLETED) {
+        // Rule 3 — batch must be OPEN (CLOSED no longer accepts bookings)
+        if (batch.status == BatchStatus.CLOSED) {
             throw PlatformException(
                 code = "BATCH_NOT_BOOKABLE",
                 message = "Batch is no longer accepting bookings",

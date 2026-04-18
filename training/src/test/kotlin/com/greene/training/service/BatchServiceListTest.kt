@@ -5,6 +5,8 @@ import com.greene.training.dto.BatchListItemResponse
 import com.greene.training.dto.BatchResponse
 import com.greene.training.entity.Batch
 import com.greene.training.repository.BatchRepository
+import com.greene.training.repository.BatchStatusLogRepository
+import com.greene.training.repository.BookingRepository
 import io.mockk.every
 import io.mockk.impl.annotations.InjectMockKs
 import io.mockk.impl.annotations.MockK
@@ -25,6 +27,12 @@ class BatchServiceListTest {
 
     @MockK
     private lateinit var batchRepository: BatchRepository
+
+    @MockK
+    private lateinit var bookingRepository: BookingRepository
+
+    @MockK
+    private lateinit var batchStatusLogRepository: BatchStatusLogRepository
 
     @InjectMockKs
     private lateinit var batchService: BatchService
