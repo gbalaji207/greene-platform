@@ -48,6 +48,10 @@ class SecurityConfig(
                     .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/batches").permitAll()
                     .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/api-docs/**", "/v3/api-docs/**").permitAll()
                     .requestMatchers(HttpMethod.GET, "/api/v1/bookings/me").hasRole("CLIENT")
+                    .requestMatchers(HttpMethod.GET,   "/api/v1/libraries").hasAnyRole("ADMIN", "STAFF", "SUPER_ADMIN")
+                    .requestMatchers(HttpMethod.GET,   "/api/v1/libraries/**").hasAnyRole("ADMIN", "STAFF", "SUPER_ADMIN")
+                    .requestMatchers(HttpMethod.POST,  "/api/v1/libraries").hasAnyRole("ADMIN", "STAFF", "SUPER_ADMIN")
+                    .requestMatchers(HttpMethod.PATCH, "/api/v1/libraries/**").hasAnyRole("ADMIN", "STAFF", "SUPER_ADMIN")
                     .anyRequest().authenticated()
             }
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter::class.java)
