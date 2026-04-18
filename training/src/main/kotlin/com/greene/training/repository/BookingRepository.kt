@@ -12,6 +12,8 @@ interface BookingRepository : JpaRepository<Booking, UUID>, JpaSpecificationExec
 
     fun findAllByClientId(clientId: UUID): List<Booking>
 
+    fun findAllByClientIdOrderByCreatedAtDesc(clientId: UUID): List<Booking>
+
     /** Used by [com.greene.training.service.BatchService.updateBatchStatus] to auto-reject on close. */
     fun findAllByBatchIdAndStatus(batchId: UUID, status: BookingStatus): List<Booking>
 }

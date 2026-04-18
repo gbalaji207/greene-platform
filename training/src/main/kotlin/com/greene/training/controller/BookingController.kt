@@ -6,12 +6,14 @@ import com.greene.training.domain.BookingStatus
 import com.greene.training.dto.BookingDetailResponse
 import com.greene.training.dto.BookingListItemResponse
 import com.greene.training.dto.BookingResponse
+import com.greene.training.dto.MyBookingResponse
 import com.greene.training.dto.UpdateBookingStatusRequest
 import com.greene.training.service.BookingService
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.security.access.prepost.PreAuthorize
+import org.springframework.security.core.Authentication
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PatchMapping
@@ -60,15 +62,30 @@ class BookingController(private val bookingService: BookingService) {
 /**
  * REST controller for staff/admin booking management.
  *
+ * GET  /api/v1/bookings/me      — CLIENT role; returns all bookings for the authenticated client.
  * GET  /api/v1/bookings        — paginated list with optional filters.
  * PATCH /api/v1/bookings/{id}  — confirm or reject a booking.
  *
- * Both endpoints require ADMIN, STAFF, or SUPER_ADMIN role.
+ * Staff/admin endpoints require ADMIN, STAFF, or SUPER_ADMIN role.
  * Error mapping is handled centrally by [com.greene.core.web.GlobalExceptionHandler].
  */
 @RestController
 @RequestMapping("/api/v1/bookings")
 class StaffBookingController(private val bookingService: BookingService) {
+
+    /**
+     * GET /api/v1/bookings/me
+     *
+     * Returns all bookings for the authenticated CLIENT, each enriched with batch details.
+     * Sorted by createdAt DESC. Returns 200 with an empty list when the client has no bookings.
+     */
+    @PreAuthorize("hasRole('CLIENT')")
+    @GetMapping("/me")
+    fun getMyBookings(authentication: Authentication): ResponseEntity<ApiResponse<List<MyBookingResponse>>> {
+        val clientId = UUID.fromString(authentication.principal as String)
+        val result = bookingService.getMyBookings(clientId)
+        return ResponseEntity.ok(ApiResponse.of(result))
+    }
 
     /**
      * GET /api/v1/bookings

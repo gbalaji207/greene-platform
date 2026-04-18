@@ -5,6 +5,7 @@ import com.greene.core.auth.security.JwtAuthenticationEntryPoint
 import com.greene.core.auth.security.JwtAuthenticationFilter
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.http.HttpMethod
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
@@ -46,6 +47,7 @@ class SecurityConfig(
                     ).permitAll()
                     .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/batches").permitAll()
                     .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/api-docs/**", "/v3/api-docs/**").permitAll()
+                    .requestMatchers(HttpMethod.GET, "/api/v1/bookings/me").hasRole("CLIENT")
                     .anyRequest().authenticated()
             }
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter::class.java)

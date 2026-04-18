@@ -6,10 +6,13 @@ import com.greene.core.exception.PlatformException
 import com.greene.core.auth.domain.UserStatus
 import com.greene.training.domain.BatchStatus
 import com.greene.training.domain.BookingStatus
+import com.greene.training.domain.TrainingStatus
 import com.greene.training.dto.BookingDetailResponse
 import com.greene.training.dto.BookingListItemResponse
 import com.greene.training.dto.BookingResponse
+import com.greene.training.dto.MyBookingResponse
 import com.greene.training.dto.UpdateBookingStatusRequest
+import com.greene.training.entity.Batch
 import com.greene.training.entity.Booking
 import com.greene.training.repository.BatchRepository
 import com.greene.training.repository.BookingRepository
@@ -182,6 +185,31 @@ class BookingService(
      *  2. Status transition must be valid → 422 INVALID_STATUS_TRANSITION (same → same)
      *  3. Persist updated status + note (note may be null — clears any existing value)
      */
+    /**
+     * Returns all bookings for [clientId], each enriched with parent batch details.
+     *
+     * - Sorted by createdAt DESC (derived method handles ordering).
+     * - Batches are fetched in a single IN query to avoid N+1.
+     * - Returns an empty list when the client has no bookings — never throws 404.
+     */
+    @Transactional(readOnly = true)
+    fun getMyBookings(clientId: UUID): List<MyBookingResponse> {
+        val bookings = bookingRepository.findAllByClientIdOrderByCreatedAtDesc(clientId)
+        if (bookings.isEmpty()) return emptyList()
+
+        val batchIds = bookings.map { it.batchId }.toSet()
+        val batchMap: Map<UUID, Batch> = batchRepository.findAllById(batchIds).associateBy { it.id!! }
+
+        return bookings.map { booking ->
+            val batch = batchMap[booking.batchId] ?: throw PlatformException(
+                code = "BATCH_NOT_FOUND",
+                message = "Batch ${booking.batchId} not found",
+                httpStatus = HttpStatus.INTERNAL_SERVER_ERROR,
+            )
+            booking.toMyBookingResponse(batch)
+        }
+    }
+
     fun updateBookingStatus(bookingId: UUID, request: UpdateBookingStatusRequest): BookingDetailResponse {
 
         // Rule 1 — booking must exist
@@ -236,6 +264,22 @@ private fun Booking.toDetailResponse() = BookingDetailResponse(
     batchId = batchId,
     clientId = clientId,
     status = status,
+    note = note,
+    createdAt = createdAt,
+    updatedAt = updatedAt,
+)
+
+private fun Booking.toMyBookingResponse(batch: Batch) = MyBookingResponse(
+    id = id!!,
+    batchId = batchId,
+    batchName = batch.name,
+    startDateTime = batch.startDateTime,
+    endDateTime = batch.endDateTime,
+    location = batch.location,
+    topics = batch.topics,
+    maxSeats = batch.maxSeats,
+    bookingStatus = status,
+    trainingStatus = if (trainingComplete) TrainingStatus.COMPLETED else TrainingStatus.PENDING,
     note = note,
     createdAt = createdAt,
     updatedAt = updatedAt,
