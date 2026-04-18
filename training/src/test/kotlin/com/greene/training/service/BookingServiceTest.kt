@@ -7,6 +7,7 @@ import com.greene.core.auth.repository.UserRepository
 import com.greene.core.exception.PlatformException
 import com.greene.training.domain.BatchStatus
 import com.greene.training.domain.BookingStatus
+import com.greene.training.domain.TrainingStatus
 import com.greene.training.dto.UpdateBookingStatusRequest
 import com.greene.training.entity.Batch
 import com.greene.training.entity.Booking
@@ -416,6 +417,107 @@ class BookingServiceTest {
 
         assertEquals(BookingStatus.CONFIRMED, result.status)
         assertNull(result.note)
+    }
+
+    // ── getMyBookings ─────────────────────────────────────────────────────────
+
+    @Test
+    fun `getMyBookings - client has no bookings - returns empty list`() {
+        every { bookingRepository.findAllByClientIdOrderByCreatedAtDesc(clientId) } returns emptyList()
+
+        val result = bookingService.getMyBookings(clientId)
+
+        assertEquals(0, result.size)
+        verify(exactly = 0) { batchRepository.findAllById(any()) }
+    }
+
+    @Test
+    fun `getMyBookings - client has one PENDING booking - returns list with one item and trainingStatus PENDING`() {
+        val booking = savedBooking()
+        val batch   = buildBatch(BatchStatus.OPEN)
+        every { bookingRepository.findAllByClientIdOrderByCreatedAtDesc(clientId) } returns listOf(booking)
+        every { batchRepository.findAllById(setOf(batchId)) }                       returns listOf(batch)
+
+        val result = bookingService.getMyBookings(clientId)
+
+        assertEquals(1,                      result.size)
+        assertEquals(bookingId,              result[0].id)
+        assertEquals(batchId,                result[0].batchId)
+        assertEquals("Batch May 2026",       result[0].batchName)
+        assertEquals(BookingStatus.PENDING,  result[0].bookingStatus)
+        assertEquals(TrainingStatus.PENDING, result[0].trainingStatus)
+        assertNull(result[0].note)
+        assertEquals(now,                    result[0].createdAt)
+        assertEquals(now,                    result[0].updatedAt)
+    }
+
+    @Test
+    fun `getMyBookings - booking has trainingComplete true - trainingStatus is COMPLETED`() {
+        val booking = savedBooking().apply {
+            status          = BookingStatus.CONFIRMED
+            trainingComplete = true
+        }
+        val batch = buildBatch(BatchStatus.OPEN)
+        every { bookingRepository.findAllByClientIdOrderByCreatedAtDesc(clientId) } returns listOf(booking)
+        every { batchRepository.findAllById(setOf(batchId)) }                       returns listOf(batch)
+
+        val result = bookingService.getMyBookings(clientId)
+
+        assertEquals(TrainingStatus.COMPLETED, result[0].trainingStatus)
+        assertEquals(BookingStatus.CONFIRMED,  result[0].bookingStatus)
+    }
+
+    @Test
+    fun `getMyBookings - client has multiple bookings - returned in repository order (createdAt DESC)`() {
+        val batchId2   = UUID.fromString("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee")
+        val bookingId2 = UUID.fromString("ffffffff-ffff-ffff-ffff-ffffffffffff")
+        val newerBooking = Booking(
+            id        = bookingId2,
+            batchId   = batchId2,
+            clientId  = clientId,
+            status    = BookingStatus.CONFIRMED,
+            createdAt = now.plusDays(10),
+            updatedAt = now.plusDays(10),
+        )
+        val olderBooking = savedBooking() // createdAt = now
+
+        val batch1 = buildBatch(BatchStatus.OPEN)
+        val batch2 = Batch(
+            id            = batchId2,
+            name          = "Batch June 2026",
+            startDateTime = now.plusDays(30),
+            createdBy     = staffId,
+            createdAt     = now,
+            updatedAt     = now,
+        )
+        every { bookingRepository.findAllByClientIdOrderByCreatedAtDesc(clientId) } returns
+                listOf(newerBooking, olderBooking)
+        every { batchRepository.findAllById(setOf(batchId2, batchId)) } returns listOf(batch1, batch2)
+
+        val result = bookingService.getMyBookings(clientId)
+
+        assertEquals(2,                result.size)
+        assertEquals(bookingId2,       result[0].id)   // newer first
+        assertEquals(bookingId,        result[1].id)   // older second
+        assertEquals("Batch June 2026", result[0].batchName)
+        assertEquals("Batch May 2026",  result[1].batchName)
+    }
+
+    @Test
+    fun `getMyBookings - REJECTED booking with note - note field populated in response`() {
+        val booking = savedBooking().apply {
+            status = BookingStatus.REJECTED
+            note   = "Batch is full. Please book the next available batch."
+        }
+        val batch = buildBatch(BatchStatus.CLOSED)
+        every { bookingRepository.findAllByClientIdOrderByCreatedAtDesc(clientId) } returns listOf(booking)
+        every { batchRepository.findAllById(setOf(batchId)) }                       returns listOf(batch)
+
+        val result = bookingService.getMyBookings(clientId)
+
+        assertEquals(BookingStatus.REJECTED,                                   result[0].bookingStatus)
+        assertEquals("Batch is full. Please book the next available batch.",    result[0].note)
+        assertEquals(TrainingStatus.PENDING,                                   result[0].trainingStatus)
     }
 }
 

@@ -7,6 +7,9 @@ package com.greene.training.domain
  * Set to COMPLETED by STAFF in E3-US5.
  */
 enum class TrainingStatus {
+    /** Training has not yet been marked complete. */
+    PENDING,
+
     /** Staff has marked training as complete. */
     COMPLETED,
 }
