@@ -54,6 +54,7 @@ class SecurityConfig(
                     .requestMatchers(HttpMethod.PATCH, "/api/v1/libraries/**").hasAnyRole("ADMIN", "STAFF", "SUPER_ADMIN")
                     // ── Content nodes ── specific matcher before the broad nodes/** catch-all
                     .requestMatchers(HttpMethod.POST,  "/api/v1/nodes/*/content").hasAnyRole("ADMIN", "STAFF", "SUPER_ADMIN")
+                    .requestMatchers(HttpMethod.POST,  "/api/v1/nodes/*/files/inline-image").hasAnyRole("ADMIN", "STAFF", "SUPER_ADMIN")
                     .requestMatchers(HttpMethod.PATCH, "/api/v1/nodes/**").hasAnyRole("ADMIN", "STAFF", "SUPER_ADMIN")
                     .anyRequest().authenticated()
             }

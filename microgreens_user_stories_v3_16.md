@@ -2,7 +2,7 @@
 
 **Backend:** Spring Boot (Kotlin)
 **Last Updated:** April 2026
-**Version:** 3.15 — Backend-only. Flutter ACs moved to `microgreens_user_stories_frontend.md`. Deployment/infra EPICs moved to `microgreens_user_stories_deployment.md`. EPIC 4 stories moved to `microgreens_user_stories_epic4.md`.
+**Version:** 3.16 — Backend-only. Flutter ACs moved to `microgreens_user_stories_frontend.md`. Deployment/infra EPICs moved to `microgreens_user_stories_deployment.md`. EPIC 4 stories moved to `microgreens_user_stories_epic4.md`.
 **Status Legend:** `[ ]` To Do | `[-]` In Progress | `[x]` Done
 
 ---
@@ -290,7 +290,7 @@
 | E4-US2 | Folder & Node Tree Management | `[x]`  |
 | E4-US3 | Content Item — Article | `[x]`  |
 | E4-US4 | Content Item — Video Upload | `[ ]`  |
-| E4-US5 | Inline Image Upload for Articles | `[ ]`  |
+| E4-US5 | Inline Image Upload for Articles | `[x]`  |
 | E4-US6 | Content Entitlement & Access Port | `[ ]`  |
 | E4-US7 | Staff Marks Training as Complete | `[ ]`  |
 | E4-US8 | Client Browses Content | `[ ]`  |
@@ -732,3 +732,4 @@
 | 3.13 | April 2026 | EPIC 4 fully redesigned as a generic, domain-agnostic content module. All 6 original crop-specific stories (E4-US1 through E4-US6) replaced with 10 new stories. Full stories moved to `microgreens_user_stories_epic4.md`. Main doc retains summary reference block only. BRD, unified HLD, LLD-Backend, and LLD-Frontend produced. |
 | 3.14 | April 2026 | E4-US1 complete. ACs finalised: no `/content/` prefix in API paths (resources are `/api/v1/libraries`); `description` PATCH sentinel (`null` = no change, `""` = clear); `DRAFT→ARCHIVED` returns `INVALID_STATUS_TRANSITION`; `ARCHIVED→*` returns `LIBRARY_ARCHIVED` (checked first); `created_by` included in response. FCM deferred. New error codes: `LIBRARY_NOT_FOUND` (404), `LIBRARY_ARCHIVED` (422). V8 migration — all 5 content tables + all indexes. |
 | 3.15 | April 2026 | E4-US2 complete. ACs rewritten to reflect finalised design: `sortOrder` uses array-index on reorder; `LIBRARY_ARCHIVED` guard added to DELETE and move; ARCHIVED library readable by staff on tree; `TreeNodeResponse` uses `@JsonInclude(NON_NULL)` for dual response shapes; `MAX_DEPTH_EXCEEDED` requires FOLDER at depth 3 as parent; `content_files` joins through `content_nodes` for library-scoped queries. No new Flyway migration. New error codes: `NODE_NOT_FOUND` (404), `MAX_DEPTH_EXCEEDED` (422), `INVALID_PARENT_NODE` (422), `MOVE_CROSS_LIBRARY` (422), `CONTENT_LOCKED` (403). |
+| v3.16 | April 2026 | E4-US5 complete. ACs rewritten to reflect finalised design: ImageTypeDetector extracted from ProfileService into shared :core utility (adds GIF support); response shape extended to include mimeType and sizeBytes matching E4-US4 pattern; INSERT not upsert for INLINE_IMAGE rows; no DELETE endpoint -- orphan cleanup deferred to E4-US10; no new Flyway migration. No new error codes. |

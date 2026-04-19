@@ -55,4 +55,5 @@ aws:
 # ── Content module ─────────────────────────────────────────────────────────────
 content:
   max-article-size-kb: 500           # Maximum HTML article size before upload is rejected
+  max-image-size-kb: 2048            # Maximum image size (2 MB) before upload is rejected
 

@@ -43,9 +43,9 @@ GET /api/v1/nodes/{id}/url            → signed URL or HTML for selected varian
 |---|---|---|--------|
 | E4-US1 | Content Library CRUD | V8 | `[x]`  |
 | E4-US2 | Folder & Node Tree Management | — | `[x]`  |
-| E4-US3 | Content Item — Article | — | `[X]`  |
+| E4-US3 | Content Item — Article | — | `[x]`  |
 | E4-US4 | Content Item — Video Upload | — | `[ ]`  |
-| E4-US5 | Inline Image Upload for Articles | — | `[ ]`  |
+| E4-US5 | Inline Image Upload for Articles | — | `[x]`  |
 | E4-US6 | Content Entitlement & Access Port | — | `[ ]`  |
 | E4-US7 | Staff Marks Training as Complete | — | `[ ]`  |
 | E4-US8 | Full Tree (all roles) | — | `[ ]`  |
@@ -244,21 +244,23 @@ The client editor produces an HTML string in memory. Sending it as a JSON body i
 
 ### Acceptance Criteria
 
-- [ ] `POST /api/v1/nodes/{id}/files/inline-image` — `ADMIN`, `STAFF`, `SUPER_ADMIN` only
-  - Accepts `multipart/form-data` with a single image file
-  - Accepted MIME types: `image/jpeg`, `image/png`, `image/gif`
-  - Validated by magic bytes (not extension)
-  - File stored at key: `content/{nodeId}/images/{uuid}.{ext}`
-  - Inserts `content_files` row: `file_role = INLINE_IMAGE`
-  - Response `201`: `{ fileId, fileKey }` — `fileKey` is the B2/MinIO object key (not a signed URL)
-  - The client editor embeds `fileKey` as the `src` attribute of `<img>` tags in the HTML
-  - Returns `415 INVALID_FILE_TYPE` if file is not a supported image type
-  - Returns `413 FILE_TOO_LARGE` if file exceeds `content.max-image-size-kb`
-  - Returns `404 NODE_NOT_FOUND` if node does not exist
-  - Returns `422 NODE_TYPE_MISMATCH` if node is not an ARTICLE ITEM
-  - Returns `422 LIBRARY_ARCHIVED` if parent library is ARCHIVED
-- [ ] Multiple inline images allowed per node — each gets its own `content_files` row
-- [ ] `fileKey` format: `content/{nodeId}/images/{uuid}.{ext}` — consistent prefix enables cleanup on node delete
+- [x] POST /api/v1/nodes/{id}/files/inline-image -- ADMIN, STAFF, SUPER_ADMIN only
+  - [x] Accepts multipart/form-data, single file field named "file"
+  - [x] Accepted MIME types: image/jpeg, image/png, image/gif
+  - [x] Validated by magic bytes via shared ImageTypeDetector utility in :core (FF D8 FF for JPEG, 89 50 4E 47 for PNG, 47 49 46 38 for GIF)
+  - [x] Extension derived from MIME type: jpeg->jpg, png->png, gif->gif
+  - [x] Stored at: content/{nodeId}/images/{uuid}.{ext}
+  - [x] Inserts content_files row: file_role = INLINE_IMAGE, mime_type, size_bytes
+  - [x] Response 201: { fileId, fileKey, mimeType, sizeBytes }
+  - [x] fileKey is raw B2/MinIO object key (not signed URL)
+  - [x] Returns 415 INVALID_FILE_TYPE if magic bytes do not match
+  - [x] Returns 413 FILE_TOO_LARGE if exceeds content.max-image-size-kb (default 2048)
+  - [x] Returns 404 NODE_NOT_FOUND
+  - [x] Returns 422 NODE_TYPE_MISMATCH if nodeType is FOLDER or itemType != ARTICLE
+  - [x] Returns 422 LIBRARY_ARCHIVED
+- [x] Multiple inline images allowed -- each inserts its own content_files row (INSERT, not upsert)
+- [x] No Flyway migration -- content_files + INLINE_IMAGE already exist (V8)
+- [x] No DELETE endpoint -- orphan cleanup deferred to E4-US10
 
 ---
 
