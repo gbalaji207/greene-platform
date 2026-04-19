@@ -4,6 +4,7 @@ import com.greene.core.auth.domain.UserEntity
 import com.greene.core.auth.repository.UserRepository
 import com.greene.core.exception.PlatformException
 import com.greene.core.storage.StorageService
+import com.greene.core.util.ImageTypeDetector
 import com.greene.core.user.dto.PhotoUploadResponse
 import com.greene.core.user.dto.ProfileResponse
 import com.greene.core.user.web.UpdateProfileRequest
@@ -90,7 +91,7 @@ class ProfileService(
 
         // a) Detect real content type from magic bytes — never trust the file extension
         val header = file.inputStream.use { it.readNBytes(8) }
-        val (contentType, ext) = detectImageType(header)
+        val (contentType, ext) = ImageTypeDetector.detect(header)
             ?: throw PlatformException(
                 code = "INVALID_FILE_TYPE",
                 message = "Only jpg, jpeg, and png files are accepted",
@@ -153,28 +154,6 @@ class ProfileService(
             createdAt = createdAt,
         )
 
-    /**
-     * Returns `(contentType, fileExtension)` when [header] matches a supported image
-     * magic-byte signature, or `null` for any unsupported type.
-     *
-     * Checked signatures:
-     *  - **JPEG** — `FF D8 FF` (first 3 bytes)
-     *  - **PNG**  — `89 50 4E 47` (first 4 bytes)
-     */
-    private fun detectImageType(header: ByteArray): Pair<String, String>? = when {
-        header.size >= 3
-                && header[0] == 0xFF.toByte()
-                && header[1] == 0xD8.toByte()
-                && header[2] == 0xFF.toByte() -> "image/jpeg" to "jpg"
-
-        header.size >= 4
-                && header[0] == 0x89.toByte()
-                && header[1] == 0x50.toByte()
-                && header[2] == 0x4E.toByte()
-                && header[3] == 0x47.toByte() -> "image/png" to "png"
-
-        else -> null
-    }
 
     companion object {
         private const val MAX_PHOTO_BYTES = 5L * 1024 * 1024   // 5 MB

@@ -8,15 +8,15 @@ Always check this file at the start of a new chat to get up to speed quickly.
 
 ## Current State Summary
 
-| Item | Value                                   |
-|---|-----------------------------------------|
-| User Stories Doc | v3.15                                   |
-| Last Completed EPIC | EPIC 3 — Batch Management (in progress) |
-| Last Completed Story | E4-US3: Content Item — Article          |
-| Next Story | E4-US5Inline image upload               |
-| Next Flyway Migration | V9                                      |
-| Phase | Phase 1 — Local Dev & APIs              |
-| Overall Progress | ~21% (~17 of 81 stories done)           |
+| Item | Value                                    |
+|---|------------------------------------------|
+| User Stories Doc | v3.16                                    |
+| Last Completed EPIC | EPIC 3 — Batch Management (in progress)  |
+| Last Completed Story | E4-US5: Inline Image Upload for Articles |
+| Next Story | E4-US4: Content Item — Video Upload      |
+| Next Flyway Migration | V9                                       |
+| Phase | Phase 1 — Local Dev & APIs               |
+| Overall Progress | ~22% (~18 of 81 stories done)            |
 
 ---
 
@@ -202,9 +202,9 @@ docker stop greene-redis greene-mailpit greene-minio
 ### EPIC 4 — Content Management (in progress)
 - [x] E4-US1 Content Library CRUD
 - [x] E4-US2 Folder & Node Tree Management
-  - [x] E4-US3 Content Item — Article
+- [x] E4-US3 Content Item — Article
 - [ ] E4-US4 Content Item — Video Upload
-- [ ] E4-US5 Inline Image Upload for Articles
+- [x] E4-US5 Inline Image Upload for Articles
 - [ ] E4-US6 Content Entitlement & Access Port
 - [ ] E4-US7 Staff Marks Training as Complete
 - [ ] E4-US8 Client Browses Content
@@ -254,6 +254,7 @@ docker stop greene-redis greene-mailpit greene-minio
 ### Nodes (ADMIN, STAFF, SUPER_ADMIN + entitled CLIENT for tree)
 - `POST /api/v1/libraries/{id}/nodes`
 - `POST /api/v1/nodes/{id}/content` (ADMIN, STAFF, SUPER_ADMIN)
+- `POST /api/v1/nodes/{id}/files/inline-image` (ADMIN, STAFF, SUPER_ADMIN)
 - `PATCH /api/v1/nodes/{id}`
 - `PATCH /api/v1/nodes/{id}/move`
 - `PATCH /api/v1/libraries/{id}/nodes/reorder`
@@ -347,10 +348,12 @@ docker stop greene-redis greene-mailpit greene-minio
 | 34 | `PATCH /api/v1/nodes/{id}` lives in `NodeController` (separate from `ContentItemController`) — both share the `/api/v1/nodes` path space; Spring disambiguates by HTTP method + path suffix. Full path on method annotation avoids base-path conflict. |
 | 35 | `content_files` has no unique constraint on `(node_id, file_role)` — the service queries `findByNodeIdAndFileRole` before upsert; delete + insert pattern used for overwrite so that `created_at` (source of `updatedAt` in response) reflects the actual re-upload time. |
 | 36 | `POST /api/v1/nodes/{id}/content` response `updatedAt` is sourced from `content_files.created_at` of the upserted file row — not from `content_nodes.updated_at`. |
+| 37 | ImageTypeDetector extracted from ProfileService into :core/util -- shared by :content and :core; adds GIF support (47 49 46 38) alongside existing JPEG and PNG signatures. ProfileService.detectImageType() private method removed. |
+| 38 | INLINE_IMAGE content_files rows are plain INSERT (not upsert/overwrite) -- multiple rows per node_id are expected and valid. No uniqueness constraint on (node_id, file_role) for INLINE_IMAGE. |
 ---
 
 ## Next Steps
 
-1. Next story: E4-US5Inline image upload (depends on article nodes)
-2. Next Flyway migration: V9 — no new tables expected for E4-US3 (content_files table already exists)
-3. FCM notifications for all deferred stories — defer to dedicated notifications story when `:notif` module is built
+1. Next story: E4-US4 Content Item -- Video Upload
+2. Next Flyway migration: V9 (first needed migration since V8)
+3. FCM notifications for all deferred stories -- defer to dedicated notifications story
