@@ -52,3 +52,7 @@ aws:
     region: ${AWS_SES_REGION:ap-south-1}
     from-address: ${AWS_SES_FROM_ADDRESS}
 
+# ── Content module ─────────────────────────────────────────────────────────────
+content:
+  max-article-size-kb: 500           # Maximum HTML article size before upload is rejected
+
